@@ -173,6 +173,8 @@ export async function queryRunner(
       delete result.pageContext.matchPath
       delete result.pageContext.mode
     }
+
+    delete result.pageContext.fragments
   }
 
   const resultJSON = JSON.stringify(result)
