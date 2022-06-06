@@ -65,9 +65,9 @@ export class GatsbyWebpackStatsExtractor {
         )
 
         // Add chunk mapping metadata to esi fragment
-        const scriptChunkMapping = `/*<![CDATA[*/window.___chunkMapping=${JSON.stringify(
+        const scriptChunkMapping = `window.___chunkMapping=${JSON.stringify(
           newChunkMapJson
-        )};/*]]>*/`
+        )};`
 
         const chunkEsiContents = `
           <script
@@ -84,17 +84,24 @@ export class GatsbyWebpackStatsExtractor {
           chunkEsiContents
         )
 
+        const hashEsiContents = `<script>window.___webpackCompilationHash="${stats.hash}";</script>`
+
+        await fs.writeFile(
+          path.join(`public`, `_gatsby`, `fragments`, `webpack-hash.html`),
+          hashEsiContents
+        )
+
         // Add assets to esi fragment
-        const assetEsiContents: string[] = []
-        for (const asset of [...assets['polyfill'], ...assets['app']]) {
-          if (asset.endsWith('.js')) {
+        const assetEsiContents: Array<string> = []
+        for (const asset of [...assets[`polyfill`], ...assets[`app`]]) {
+          if (asset.endsWith(`.js`)) {
             assetEsiContents.push(`<script src="${asset}" async></script>`)
           }
         }
 
         await fs.writeFile(
           path.join(`public`, `_gatsby`, `fragments`, `assets.html`),
-          assetEsiContents.join('')
+          assetEsiContents.join(``)
         )
 
         previousChunkMapJson = newChunkMapJson

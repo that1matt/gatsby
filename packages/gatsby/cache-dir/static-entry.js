@@ -107,7 +107,6 @@ export default async function staticPage({
   reversedStyles,
   reversedScripts,
   inlinePageData = false,
-  webpackCompilationHash,
 }) {
   // for this to work we need this function to be sync or at least ensure there is single execution of it at a time
   global.unsafeBuiltinUsage = []
@@ -347,7 +346,7 @@ export default async function staticPage({
     })
 
     // Add page metadata for the current page
-    const windowPageData = `/*<![CDATA[*/window.pagePath="${pagePath}";window.___webpackCompilationHash="${webpackCompilationHash}";${
+    const windowPageData = `/*<![CDATA[*/window.pagePath="${pagePath}";${
       inlinePageData ? `window.pageData=${JSON.stringify(pageData)};` : ``
     }/*]]>*/`
 
@@ -367,6 +366,10 @@ export default async function staticPage({
 
     postBodyComponents.push(
       <esi:include src="/_gatsby/fragments/assets.html" />
+    )
+
+    postBodyComponents.push(
+      <esi:include src="/_gatsby/fragments/webpack-hash.html" />
     )
 
     // Reorder headComponents so meta tags are always at the top and aren't missed by crawlers
