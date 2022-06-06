@@ -370,21 +370,11 @@ export default async function staticPage({
       />
     )
 
-    // Add chunk mapping metadata
-    const scriptChunkMapping = `/*<![CDATA[*/window.___chunkMapping=${JSON.stringify(
-      chunkMapping
-    )};/*]]>*/`
-
     postBodyComponents.push(
-      <script
-        key={`chunk-mapping`}
-        id={`gatsby-chunk-mapping`}
-        dangerouslySetInnerHTML={{
-          __html: scriptChunkMapping,
-        }}
-      />
+      <esi:include src="_gatsby/fragments/chunk-map.html" />
     )
 
+    // TODO handle this too
     let bodyScripts = []
     if (chunkMapping[`polyfill`]) {
       chunkMapping[`polyfill`].forEach(script => {
