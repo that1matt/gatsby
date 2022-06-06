@@ -93,7 +93,10 @@ export class GatsbyWebpackStatsExtractor {
 
         // Add assets to esi fragment
         const assetEsiContents: Array<string> = []
-        for (const asset of [...assets[`polyfill`], ...assets[`app`]]) {
+        for (const asset of new Set([
+          ...assets[`polyfill`],
+          ...assets[`app`],
+        ])) {
           if (asset.endsWith(`.js`)) {
             assetEsiContents.push(`<script src="${asset}" async></script>`)
           }
