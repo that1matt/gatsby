@@ -61,14 +61,21 @@ export const resetLastHash = (): void => {
   lastHash = null
 }
 
-const pickComponentFields = (page: IGatsbyPage): IGatsbyPageComponent =>
-  _.pick(page, [`component`, `componentChunkName`])
+const pickComponentFields = (page: IGatsbyPage): Array<IGatsbyPageComponent> =>
+  [
+    _.pick(page, [`component`, `componentChunkName`]),
+    ...(page.fragments ?? []).map(fragment =>
+      _.isPlainObject(fragment)
+        ? _.pick(fragment, [`component`, `componentChunkName`])
+        : undefined
+    ),
+  ].filter(Boolean) as Array<IGatsbyPageComponent>
 
 export const getComponents = (
   pages: Array<IGatsbyPage>
 ): Array<IGatsbyPageComponent> =>
   _(pages)
-    .map(pickComponentFields)
+    .flatMap(pickComponentFields)
     .uniqBy(c => c.componentChunkName)
     .orderBy(c => c.componentChunkName)
     .value()
@@ -233,6 +240,8 @@ export const writeAll = async (state: IGatsbyState): Promise<boolean> => {
 
     writeModule(`$virtual/ssr-sync-requires`, lazySyncRequires)
   }
+
+  console.log({ components })
 
   // Create file with sync requires of components/json files.
   let syncRequires = `
