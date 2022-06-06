@@ -59,6 +59,11 @@ export interface IGatsbyPage {
    * @internal
    */
   mode: PageMode
+  fragments: Array<{
+    component: string
+    componentChunkName: string
+    context: Record<string, unknown>
+  }>
 }
 
 export interface IGatsbyFunction {

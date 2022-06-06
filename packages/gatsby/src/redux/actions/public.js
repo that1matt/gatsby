@@ -403,6 +403,19 @@ ${reservedFields.map(f => `  * "${f}"`).join(`\n`)}
     // Ensure the page has a context object
     context: page.context || {},
     updatedAt: Date.now(),
+    fragments: page?.fragments?.map(fragmentProvidedByUser => {
+      if (_.isPlainObject(fragmentProvidedByUser)) {
+        return {
+          ...fragmentProvidedByUser,
+          component: normalizePath(fragmentProvidedByUser.component),
+          componentChunkName: generateComponentChunkName(
+            fragmentProvidedByUser.component,
+            `fragment`
+          ),
+        }
+      }
+      return fragmentProvidedByUser
+    }),
 
     // Link page to its plugin.
     pluginCreator___NODE: plugin.id ?? ``,
