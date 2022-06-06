@@ -86,6 +86,7 @@ export default function preset(_, options = {}) {
       [
         resolve(`@babel/preset-react`),
         {
+          throwIfNamespace: false,
           useBuiltIns: true,
           pragma:
             options.reactRuntime === `automatic`

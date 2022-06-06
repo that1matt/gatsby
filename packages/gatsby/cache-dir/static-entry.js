@@ -371,35 +371,12 @@ export default async function staticPage({
     )
 
     postBodyComponents.push(
-      <esi:include src="_gatsby/fragments/chunk-map.html" />
+      <esi:include src="/_gatsby/fragments/chunk-map.html" />
     )
 
-    // TODO handle this too
-    let bodyScripts = []
-    if (chunkMapping[`polyfill`]) {
-      chunkMapping[`polyfill`].forEach(script => {
-        const scriptPath = `${__PATH_PREFIX__}${script}`
-        bodyScripts.push(
-          <script key={scriptPath} src={scriptPath} noModule={true} />
-        )
-      })
-    }
-
-    // Filter out prefetched bundles as adding them as a script tag
-    // would force high priority fetching.
-    bodyScripts = bodyScripts.concat(
-      scripts
-        .filter(s => s.rel !== `prefetch`)
-        .map(s => {
-          const scriptPath = `${__PATH_PREFIX__}/${JSON.stringify(s.name).slice(
-            1,
-            -1
-          )}`
-          return <script key={scriptPath} src={scriptPath} async />
-        })
+    postBodyComponents.push(
+      <esi:include src="/_gatsby/fragments/assets.html" />
     )
-
-    postBodyComponents.push(...bodyScripts)
 
     // Reorder headComponents so meta tags are always at the top and aren't missed by crawlers
     // by being pushed down by large inline styles, etc.
