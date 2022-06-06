@@ -157,7 +157,31 @@ module.exports = async (program: IServeProgram): Promise<void> => {
     )
   )
 
-  router.use(express.static(`public`, { dotfiles: `allow` }))
+  const getHTML = (req, res, next) => {
+    let parsedPath = path.posix.join(`public`, req.path, `index.html`)
+  
+    try {
+      let contents = fs.readFileSync(parsedPath).toString()
+      const regex = /<esi:include\s+src=\"([^\"]+)\"\s+\/>/g;
+      const esiIncludesMatch = contents.matchAll(regex)
+
+      for (const match of esiIncludesMatch) {
+        try {
+          const esiContents = fs.readFileSync(`public/${match[1]}`).toString()
+          contents = contents.replace(match[0], esiContents)
+        } catch (e) {
+          console.warn(e)
+        }
+      }
+      res.end(contents)
+    } catch (e) {
+      next()
+    }
+  }
+
+  router.use(getHTML, express.static(`public`, { dotfiles: `allow` }))
+  // router.use(express.static(`public`, { dotfiles: `allow` }))
+  
 
   const compiledFunctionsDir = path.join(
     program.directory,
