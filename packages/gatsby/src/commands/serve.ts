@@ -162,7 +162,7 @@ module.exports = async (program: IServeProgram): Promise<void> => {
   
     try {
       let contents = fs.readFileSync(parsedPath).toString()
-      const regex = /<esi:include\s+src=\"([^\"]+)\"\s+\/>/g;
+      const regex = /<esi:include\s+src="([^"]+)"\s+\/>/g;
       const esiIncludesMatch = contents.matchAll(regex)
 
       for (const match of esiIncludesMatch) {
