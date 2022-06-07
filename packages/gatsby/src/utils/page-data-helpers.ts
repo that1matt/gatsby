@@ -8,6 +8,7 @@ export interface IPageData {
   staticQueryHashes: Array<string>
   getServerDataError?: IStructuredError | Array<IStructuredError> | null
   manifestId?: string
+  fragments?: IGatsbyPage["fragments"]
 }
 
 export function constructPageDataString(
@@ -17,6 +18,7 @@ export function constructPageDataString(
     path: pagePath,
     staticQueryHashes,
     manifestId,
+    fragments,
   }: IPageData,
   result: string | Buffer
 ): string {
@@ -26,6 +28,19 @@ export function constructPageDataString(
     `"path":${JSON.stringify(pagePath)},` +
     `"result":${result},` +
     `"staticQueryHashes":${JSON.stringify(staticQueryHashes)}`
+
+  if (fragments) {
+    const formattedFragments = fragments.map(fragment => {
+      return {
+        result: {
+          pageContext: fragment.context,
+        },
+        componentChunkName: fragment.componentChunkName,
+      }
+    })
+
+    body += `,"fragments":${JSON.stringify(formattedFragments)}`
+  }
 
   if (matchPath) {
     body += `,"matchPath":"${matchPath}"`
