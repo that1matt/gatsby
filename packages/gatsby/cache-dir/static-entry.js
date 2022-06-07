@@ -414,7 +414,6 @@ export default async function staticPage({
 }
 
 export function getPageChunk({ componentChunkName }) {
-  console.log({componentChunkName})
   return asyncRequires.components[componentChunkName]()
 }
 

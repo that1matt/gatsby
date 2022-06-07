@@ -366,11 +366,12 @@ module.exports = async function build(
 
       const fragmentChunkNames: Record<string, string> = {}
       for (const fragmentName of Object.keys(state.fragments)) {
-        fragmentChunkNames[fragmentName] = state.fragments[fragmentName].componentChunkName
+        fragmentChunkNames[fragmentName] =
+          state.fragments[fragmentName].componentChunkName
       }
 
       await appDataUtil.write(
-        publicDir, 
+        publicDir,
         webpackCompilationHash as string,
         fragmentChunkNames
       )
@@ -419,7 +420,6 @@ module.exports = async function build(
 
   await waitForWorkerPoolRestart
 
-  console.log(`wat?`)
   await buildFragments({
     program,
     workerPool,

@@ -9,7 +9,7 @@ export interface IPageData {
   staticQueryHashes: Array<string>
   getServerDataError?: IStructuredError | Array<IStructuredError> | null
   manifestId?: string
-  fragments?: IGatsbyPage["fragments"]
+  fragments: IGatsbyPage["fragments"]
 }
 
 export function constructPageDataString(
@@ -19,6 +19,7 @@ export function constructPageDataString(
     path: pagePath,
     staticQueryHashes,
     manifestId,
+    fragments: overrideFragments,
   }: IPageData,
   result: string | Buffer,
   fragments: IGatsbyState["fragments"]
@@ -30,16 +31,28 @@ export function constructPageDataString(
     `"result":${result},` +
     `"staticQueryHashes":${JSON.stringify(staticQueryHashes)}`
 
-  let formattedFragments = {}
+  const formattedFragments = {}
 
   if (fragments) {
     for (const fragment of fragments.values()) {
+      let componentChunkName = fragment.componentChunkName
+      if (overrideFragments[fragment.name]) {
+        if (!fragments.has(overrideFragments[fragment.name])) {
+          // TODO don't freak out
+          throw new Error(`"AHHHH" ${fragment.name}`)
+        }
+
+        componentChunkName = fragments.get(
+          overrideFragments[fragment.name]
+        )!.componentChunkName
+      }
+
       // @ts-ignore
       formattedFragments[fragment.name] = {
         result: {
           layoutContext: fragment.context,
         },
-        componentChunkName: fragment.componentChunkName,
+        componentChunkName,
         id: getFragmentId(fragment),
         name: fragment.name,
       }
