@@ -263,37 +263,35 @@ export class BaseLoader {
       const finalResult = {}
 
       const componentChunkPromises = Promise.all(
-        [{ componentChunkName }, ...pageData.fragments].map(fragment =>
+        pageData.fragments.map(fragment =>
           this.loadComponent(fragment.componentChunkName)
         )
-      )
-        .then()
-        .then(components => {
-          finalResult.createdAt = new Date()
+      ).then(components => {
+        finalResult.createdAt = new Date()
 
-          for (const component of components) {
-            if (!component || component instanceof Error) {
-              finalResult.status = PageResourceStatus.Error
-              finalResult.error = component
-            }
+        for (const component of components) {
+          if (!component || component instanceof Error) {
+            finalResult.status = PageResourceStatus.Error
+            finalResult.error = component
           }
+        }
 
-          let pageResources
-          if (finalResult.status !== PageResourceStatus.Error) {
-            finalResult.status = PageResourceStatus.Success
-            if (result.notFound === true) {
-              finalResult.notFound = true
-            }
-            pageData = Object.assign(pageData, {
-              webpackCompilationHash: allData[0]
-                ? allData[0].webpackCompilationHash
-                : ``,
-            })
-            pageResources = toPageResources(pageData, components)
+        let pageResources
+        if (finalResult.status !== PageResourceStatus.Error) {
+          finalResult.status = PageResourceStatus.Success
+          if (result.notFound === true) {
+            finalResult.notFound = true
           }
-          // undefined if final result is an error
-          return pageResources
-        })
+          pageData = Object.assign(pageData, {
+            webpackCompilationHash: allData[0]
+              ? allData[0].webpackCompilationHash
+              : ``,
+          })
+          pageResources = toPageResources(pageData, components)
+        }
+        // undefined if final result is an error
+        return pageResources
+      })
 
       const staticQueryBatchPromise = Promise.all(
         staticQueryHashes.map(staticQueryHash => {

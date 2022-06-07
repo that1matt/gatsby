@@ -42,7 +42,7 @@ export function constructPageDataString(
       if (fragment.componentChunkName) {
         return {
           result: {
-            pageContext: fragment.context,
+            layoutContext: fragment.context,
           },
           componentChunkName: fragment.componentChunkName,
           id: getFragmentId(fragment),
