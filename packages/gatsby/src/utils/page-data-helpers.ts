@@ -1,5 +1,6 @@
 import type { IStructuredError } from "gatsby-cli/src/structured-errors/types"
 import { IGatsbyPage } from "../redux/types"
+import { getFragmentId } from "./fragments"
 
 export interface IPageData {
   componentChunkName: IGatsbyPage["componentChunkName"]
@@ -44,6 +45,7 @@ export function constructPageDataString(
             pageContext: fragment.context,
           },
           componentChunkName: fragment.componentChunkName,
+          id: getFragmentId(fragment),
         }
       } else {
         return formattedComponent
