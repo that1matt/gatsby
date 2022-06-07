@@ -31,6 +31,7 @@ import { functionsReducer } from "./functions"
 import { nodeManifestReducer } from "./node-manifest"
 import { reducer as pageTreeReducer } from "gatsby-cli/lib/reporter/redux/reducers/page-tree"
 import { setRequestHeadersReducer } from "./set-request-headers"
+import { fragmentsReducer } from "./fragments"
 
 /**
  * @property exports.nodesTouched Set<string>
@@ -69,4 +70,5 @@ export {
   nodeManifestReducer as nodeManifests,
   pageTreeReducer as pageTree,
   setRequestHeadersReducer as requestHeaders,
+  fragmentsReducer as fragments,
 }

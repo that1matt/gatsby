@@ -241,7 +241,7 @@ export const writeAll = async (state: IGatsbyState): Promise<boolean> => {
     writeModule(`$virtual/ssr-sync-requires`, lazySyncRequires)
   }
 
-  console.log({ components })
+  // console.log({ components })
 
   // Create file with sync requires of components/json files.
   let syncRequires = `

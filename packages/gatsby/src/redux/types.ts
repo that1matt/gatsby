@@ -359,6 +359,7 @@ export interface IGatsbyState {
     trackedStaticQueryResults: Map<string, IStaticQueryResultState>
     unsafeBuiltinWasUsedInSSR: boolean
   }
+  fragments: Map<string, IGatsbyPageFragment>
 }
 
 export type GatsbyStateKeys = keyof IGatsbyState
