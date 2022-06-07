@@ -416,3 +416,21 @@ export default async function staticPage({
 export function getPageChunk({ componentChunkName }) {
   return asyncRequires.components[componentChunkName]()
 }
+
+export async function renderFragment({ fragment }) {
+  const FragmentComponent = await getPageChunk(fragment)
+  const writableStream = new WritableAsPromise()
+  const { pipe } = renderToPipeableStream(
+    createElement(FragmentComponent.default, {
+      layoutContext: fragment.context,
+    }),
+    {
+      onAllReady() {
+        pipe(writableStream)
+      },
+      onError() {},
+    }
+  )
+
+  return await writableStream
+}

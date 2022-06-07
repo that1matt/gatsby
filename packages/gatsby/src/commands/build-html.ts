@@ -501,3 +501,34 @@ export async function buildHTMLPagesAndDeleteStaleArtifacts({
 
   return { toRegenerate, toDelete }
 }
+
+export async function buildFragments({
+  program,
+  workerPool,
+  parentSpan,
+}: {
+  workerPool: GatsbyWorkerPool
+  parentSpan?: Span
+  program: IBuildArgs
+}): Promise<void> {
+  const buildHTMLActivityProgress = reporter.activityTimer(
+    `Building fragments HTML`,
+    {
+      parentSpan,
+    }
+  )
+  buildHTMLActivityProgress.start()
+
+  const htmlComponentRendererPath = `${program.directory}/${ROUTES_DIRECTORY}render-page.js`
+  try {
+    await workerPool.single.renderFragments({
+      publicDir: path.join(program.directory, `public`),
+      htmlComponentRendererPath,
+      fragments: Array.from(store.getState().fragments.entries()),
+    })
+  } catch (e) {
+    buildHTMLActivityProgress.panic(e)
+  } finally {
+    buildHTMLActivityProgress.end()
+  }
+}

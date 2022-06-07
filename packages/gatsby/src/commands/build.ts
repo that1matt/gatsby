@@ -8,6 +8,7 @@ import {
   buildRenderer,
   buildHTMLPagesAndDeleteStaleArtifacts,
   IBuildArgs,
+  buildFragments,
 } from "./build-html"
 import { buildProductionBundle } from "./build-javascript"
 import { bootstrap } from "../bootstrap"
@@ -408,6 +409,13 @@ module.exports = async function build(
   }
 
   await waitForWorkerPoolRestart
+
+  console.log(`wat?`)
+  await buildFragments({
+    program,
+    workerPool,
+    parentSpan: buildSpan,
+  })
 
   const { toRegenerate, toDelete } =
     await buildHTMLPagesAndDeleteStaleArtifacts({

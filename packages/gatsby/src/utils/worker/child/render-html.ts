@@ -18,6 +18,7 @@ import {
   IResourcesForTemplate,
   getStaticQueryContext,
 } from "../../static-query-utils"
+import { IGatsbyPageFragment } from "../../../internal"
 // we want to force posix-style joins, so Windows doesn't produce backslashes for urls
 const { join } = path.posix
 
@@ -260,4 +261,23 @@ export const renderHTMLDev = async ({
     },
     { concurrency: 2 }
   )
+}
+
+export async function renderFragments({
+  fragments,
+  htmlComponentRendererPath,
+  publicDir,
+}: {
+  publicDir: string
+  fragments: Array<[string, IGatsbyPageFragment]>
+  htmlComponentRendererPath: string
+}): Promise<void> {
+  const htmlComponentRenderer = require(htmlComponentRendererPath)
+
+  for (const [fileName, fragment] of fragments) {
+    await fs.outputFile(
+      path.join(publicDir, `_gatsby`, `fragments`, `${fileName}.html`),
+      await htmlComponentRenderer.renderFragment({ fragment })
+    )
+  }
 }
