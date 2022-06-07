@@ -209,7 +209,7 @@ export const renderHTMLProd = async ({
         }
       }
     },
-    { concurrency: 2 }
+    { concurrency: 1 } // TODO change this to 2 and useContext for fragment state
   )
 
   return { unsafeBuiltinsUsageByPagePath, previewErrors }
@@ -274,11 +274,10 @@ export async function renderFragments({
 }): Promise<void> {
   const htmlComponentRenderer = require(htmlComponentRendererPath)
 
-
   for (const [fileName, fragment] of fragments) {
     await fs.outputFile(
       path.join(publicDir, `_gatsby`, `fragments`, `${fileName}.html`),
-      await htmlComponentRenderer.renderFragment({fragment})
+      await htmlComponentRenderer.renderFragment({ fragment })
     )
   }
 }

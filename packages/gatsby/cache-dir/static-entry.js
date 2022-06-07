@@ -202,8 +202,9 @@ export default async function staticPage({
       postBodyComponents = sanitizeComponents(components)
     }
 
-    const { componentChunkName } = pageData
+    const { componentChunkName, fragments: fragmentOverrides } = pageData
     const pageComponent = await asyncRequires.components[componentChunkName]()
+    global.pageFragments = fragmentOverrides
 
     class RouteHandler extends React.Component {
       render() {

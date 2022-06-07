@@ -35,27 +35,36 @@ export function constructPageDataString(
 
   if (fragments) {
     for (const fragment of fragments.values()) {
-      let componentChunkName = fragment.componentChunkName
+      let formattedFragment = {
+        result: {
+          layoutContext: fragment.context,
+        },
+        componentChunkName: fragment.componentChunkName,
+        id: fragment.name,
+        name: fragment.name,
+      }
+
       if (overrideFragments[fragment.name]) {
         if (!fragments.has(overrideFragments[fragment.name])) {
           // TODO don't freak out
           throw new Error(`"AHHHH" ${fragment.name}`)
         }
 
-        componentChunkName = fragments.get(
+        const overrideComponent = fragments.get(
           overrideFragments[fragment.name]
-        )!.componentChunkName
+        )!
+
+        formattedFragment = {
+          result: {
+            layoutContext: overrideComponent.context,
+          },
+          componentChunkName: overrideComponent.componentChunkName,
+          id: overrideComponent.name,
+          name: fragment.name,
+        }
       }
 
-      // @ts-ignore
-      formattedFragments[fragment.name] = {
-        result: {
-          layoutContext: fragment.context,
-        },
-        componentChunkName,
-        id: getFragmentId(fragment),
-        name: fragment.name,
-      }
+      formattedFragments[fragment.name] = formattedFragment
     }
   }
 
