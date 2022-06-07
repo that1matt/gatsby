@@ -69,7 +69,12 @@ function preset(context, options = {}) {
           browser ? browserConfig : nodeConfig
         ),
       ],
-      [r(`@babel/preset-react`)],
+      [
+        r(`@babel/preset-react`),
+        {
+          throwIfNamespace: false,
+        }
+      ],
       r(`@babel/preset-flow`),
     ],
     plugins: [
