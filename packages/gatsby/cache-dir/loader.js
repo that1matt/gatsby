@@ -251,7 +251,7 @@ export class BaseLoader {
       this.loadPageDataJson(pagePath),
     ]).then(allData => {
       const windowPageFragments = window.pageFragments || new Map()
-      
+
       const result = allData[1]
       if (result.status === PageResourceStatus.Error) {
         return {
@@ -264,13 +264,20 @@ export class BaseLoader {
 
       const finalResult = {}
 
+      const loadFragmentComponent = fragment =>
+        new Promise(res => {
+          this.loadComponent(fragment.componentChunkName).then(component =>
+            res([fragment, component])
+          )
+        })
+
       const componentChunkPromises = Promise.all([
         this.loadComponent(componentChunkName),
         Promise.all(
-          Array.from(Object.values((pageData.fragments))).map(fragment =>
-            [fragment, this.loadComponent(fragment.componentChunkName)]
+          Array.from(Object.values(pageData.fragments)).map(fragment =>
+            loadFragmentComponent(fragment)
           )
-        )
+        ),
       ]).then(components => {
         const [rootComponent, fragments] = components
         finalResult.createdAt = new Date()
@@ -284,7 +291,7 @@ export class BaseLoader {
 
           windowPageFragments.set(fragment.name, {
             component,
-            layoutContext: fragment.layoutContext,
+            layoutContext: fragment.result.layoutContext,
           })
         }
 
