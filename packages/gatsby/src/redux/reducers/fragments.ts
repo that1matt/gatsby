@@ -6,6 +6,7 @@ export const fragmentsReducer = (
   action: ActionsUnion
 ): IGatsbyState["fragments"] => {
   switch (action.type) {
+    // TODO remove this someday
     case `CREATE_PAGE`: {
       action.payload.fragments?.forEach(fragment => {
         if (typeof fragment !== `string`) {
@@ -13,6 +14,12 @@ export const fragmentsReducer = (
           state.set(id, fragment)
         }
       })
+      return state
+    }
+
+    case `CREATE_FRAGMENT`: {
+      // TODO more robust name fetch
+      state.set(action.payload.name!, action.payload)
       return state
     }
     default:

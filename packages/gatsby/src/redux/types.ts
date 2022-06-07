@@ -66,6 +66,7 @@ export interface IGatsbyPageFragment {
   component: string
   componentChunkName: string
   context: Record<string, unknown>
+  name: string
 }
 
 export interface IGatsbyFunction {
@@ -450,6 +451,7 @@ export type ActionsUnion =
   | ISetJobV2Context
   | IClearJobV2Context
   | ISetDomainRequestHeaders
+  | ICreateFragmentAction
 
 export interface ISetComponentFeatures {
   type: `SET_COMPONENT_FEATURES`
@@ -726,6 +728,12 @@ export interface ICreatePageAction {
   plugin?: IGatsbyPlugin
   contextModified?: boolean
   componentModified?: boolean
+}
+
+export interface ICreateFragmentAction {
+  type: `CREATE_FRAGMENT`
+  payload: IGatsbyPageFragment
+  plugin?: IGatsbyPlugin
 }
 
 export interface ICreateRedirectAction {

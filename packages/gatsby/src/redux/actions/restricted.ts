@@ -20,6 +20,7 @@ import {
   ICreateResolverContext,
   IGatsbyPluginContext,
 } from "../types"
+import { generateComponentChunkName } from "../../utils/js-chunk-names"
 
 type RestrictionActionNames =
   | "createFieldExtension"
@@ -27,6 +28,7 @@ type RestrictionActionNames =
   | "createResolverContext"
   | "addThirdPartySchema"
   | "printTypeDefinitions"
+  | "createFragment"
 
 type SomeActionCreator =
   | ActionCreator<ActionsUnion>
@@ -420,6 +422,26 @@ export const actions = {
         })
       }
     },
+
+  createFragment: (
+    payload: {
+      name: string, 
+      component: string, 
+      context: Record<string, unknown>
+    },
+    plugin: IGatsbyPlugin,
+    traceId?: string,
+  ) => {
+    return {
+      type: `CREATE_FRAGMENT`,
+      plugin,
+      payload: {
+        componentChunkName: generateComponentChunkName(payload.component, "fragment"),
+        ...payload,
+      },
+      traceId,
+    }
+  }
 }
 
 const withDeprecationWarning =
@@ -539,5 +561,8 @@ export const availableActionsByAPI = mapAvailableActionsToAPIs({
   },
   printTypeDefinitions: {
     [ALLOWED_IN]: [`createSchemaCustomization`],
+  },
+  createFragment: {
+    [ALLOWED_IN]: [`createPages`],
   },
 })

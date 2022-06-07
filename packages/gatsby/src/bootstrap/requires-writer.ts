@@ -7,7 +7,7 @@ import reporter from "gatsby-cli/lib/reporter"
 import { match } from "@gatsbyjs/reach-router/lib/utils"
 import { joinPath } from "gatsby-core-utils"
 import { store, emitter } from "../redux/"
-import { IGatsbyState, IGatsbyPage } from "../redux/types"
+import { IGatsbyState, IGatsbyPage, IGatsbyPageFragment } from "../redux/types"
 import {
   writeModule,
   getAbsolutePathForVirtualModule,
@@ -61,21 +61,19 @@ export const resetLastHash = (): void => {
   lastHash = null
 }
 
-const pickComponentFields = (page: IGatsbyPage): Array<IGatsbyPageComponent> =>
-  [
-    _.pick(page, [`component`, `componentChunkName`]),
-    ...(page.fragments ?? []).map(fragment =>
-      _.isPlainObject(fragment)
-        ? _.pick(fragment, [`component`, `componentChunkName`])
-        : undefined
-    ),
-  ].filter(Boolean) as Array<IGatsbyPageComponent>
+type IBareComponentData = Pick<IGatsbyPageComponent, `component` | `componentChunkName`>
+const pickComponentFields = (page: IGatsbyPage | IGatsbyPageFragment): IBareComponentData =>
+  ({
+    component: page.component,
+    componentChunkName: page.componentChunkName
+  })
 
 export const getComponents = (
-  pages: Array<IGatsbyPage>
-): Array<IGatsbyPageComponent> =>
-  _(pages)
-    .flatMap(pickComponentFields)
+  pages: Array<IGatsbyPage>,
+  fragments: IGatsbyState["fragments"]
+): Array<IBareComponentData> =>
+  _([...pages, ...fragments.values()])
+    .map(pickComponentFields)
     .uniqBy(c => c.componentChunkName)
     .orderBy(c => c.componentChunkName)
     .value()
@@ -192,10 +190,10 @@ const createHash = (
 
 // Write out pages information.
 export const writeAll = async (state: IGatsbyState): Promise<boolean> => {
-  const { program } = state
+  const { program, fragments } = state
   const pages = [...state.pages.values()]
   const matchPaths = getMatchPaths(pages)
-  const components = getComponents(pages)
+  const components = getComponents(pages, fragments)
   let cleanedSSRVisitedPageComponents: Array<IGatsbyPageComponent> = []
 
   if (process.env.GATSBY_EXPERIMENTAL_DEV_SSR) {

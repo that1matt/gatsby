@@ -1,5 +1,5 @@
 import type { IStructuredError } from "gatsby-cli/src/structured-errors/types"
-import { IGatsbyPage } from "../redux/types"
+import { IGatsbyPage, IGatsbyState } from "../redux/types"
 import { getFragmentId } from "./fragments"
 
 export interface IPageData {
@@ -19,9 +19,9 @@ export function constructPageDataString(
     path: pagePath,
     staticQueryHashes,
     manifestId,
-    fragments = [],
   }: IPageData,
-  result: string | Buffer
+  result: string | Buffer,
+  fragments: IGatsbyState["fragments"]
 ): string {
   let body =
     `{` +
@@ -30,27 +30,20 @@ export function constructPageDataString(
     `"result":${result},` +
     `"staticQueryHashes":${JSON.stringify(staticQueryHashes)}`
 
-  const formattedComponent = {
-    result: JSON.parse(result.toString()), // TODO optimize this
-    componentChunkName,
-  }
-
-  let formattedFragments = [formattedComponent]
+  let formattedFragments = {}
 
   if (fragments) {
-    formattedFragments = fragments.map(fragment => {
-      if (fragment.componentChunkName) {
-        return {
-          result: {
-            layoutContext: fragment.context,
-          },
-          componentChunkName: fragment.componentChunkName,
-          id: getFragmentId(fragment),
-        }
-      } else {
-        return formattedComponent
+    for (const fragment of fragments.values()) {
+      // @ts-ignore
+      formattedFragments[fragment.name] = {
+        result: {
+          layoutContext: fragment.context,
+        },
+        componentChunkName: fragment.componentChunkName,
+        id: getFragmentId(fragment),
+        name: fragment.name,
       }
-    })
+    }
   }
 
   body += `,"fragments":${JSON.stringify(formattedFragments)}`

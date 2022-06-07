@@ -216,19 +216,7 @@ export default async function staticPage({
           },
         }
 
-        const pageElement = createElement(
-          React.Fragment,
-          null,
-          pageData.fragments.map(fragment => {
-            if (fragment.componentChunkName === pageData.componentChunkName) {
-              return createElement(pageComponent.default, props)
-            } else {
-              return (
-                <esi:include src={`/_gatsby/fragments/${fragment.id}.html`} />
-              )
-            }
-          })
-        )
+        const pageElement = createElement(pageComponent.default, props)
 
         const wrappedPage = apiRunner(
           `wrapPageElement`,
@@ -426,6 +414,7 @@ export default async function staticPage({
 }
 
 export function getPageChunk({ componentChunkName }) {
+  console.log({componentChunkName})
   return asyncRequires.components[componentChunkName]()
 }
 

@@ -274,10 +274,11 @@ export async function renderFragments({
 }): Promise<void> {
   const htmlComponentRenderer = require(htmlComponentRendererPath)
 
+
   for (const [fileName, fragment] of fragments) {
     await fs.outputFile(
       path.join(publicDir, `_gatsby`, `fragments`, `${fileName}.html`),
-      await htmlComponentRenderer.renderFragment({ fragment })
+      await htmlComponentRenderer.renderFragment({fragment})
     )
   }
 }

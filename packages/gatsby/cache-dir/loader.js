@@ -63,7 +63,7 @@ const doesConnectionSupportPrefetch = () => {
 // Regex that matches common search crawlers
 const BOT_REGEX = /bot|crawler|spider|crawling/i
 
-const toPageResources = (pageData, components = null) => {
+const toPageResources = (pageData, component = null) => {
   const page = {
     componentChunkName: pageData.componentChunkName,
     path: pageData.path,
@@ -75,7 +75,7 @@ const toPageResources = (pageData, components = null) => {
   }
 
   return {
-    components,
+    component,
     json: pageData.result,
     page,
   }
@@ -250,6 +250,8 @@ export class BaseLoader {
       this.loadAppData(),
       this.loadPageDataJson(pagePath),
     ]).then(allData => {
+      const windowPageFragments = window.pageFragments || new Map()
+      
       const result = allData[1]
       if (result.status === PageResourceStatus.Error) {
         return {
@@ -262,19 +264,36 @@ export class BaseLoader {
 
       const finalResult = {}
 
-      const componentChunkPromises = Promise.all(
-        pageData.fragments.map(fragment =>
-          this.loadComponent(fragment.componentChunkName)
+      const componentChunkPromises = Promise.all([
+        this.loadComponent(componentChunkName),
+        Promise.all(
+          Array.from(Object.values((pageData.fragments))).map(fragment =>
+            [fragment, this.loadComponent(fragment.componentChunkName)]
+          )
         )
-      ).then(components => {
+      ]).then(components => {
+        const [rootComponent, fragments] = components
         finalResult.createdAt = new Date()
 
-        for (const component of components) {
+        for (const fragmentArray of fragments) {
+          const [fragment, component] = fragmentArray
           if (!component || component instanceof Error) {
             finalResult.status = PageResourceStatus.Error
             finalResult.error = component
           }
+
+          windowPageFragments.set(fragment.name, {
+            component,
+            layoutContext: fragment.layoutContext,
+          })
         }
+
+        if (!rootComponent || rootComponent instanceof Error) {
+          finalResult.status = PageResourceStatus.Error
+          finalResult.error = rootComponent
+        }
+
+        window.pageFragments = windowPageFragments
 
         let pageResources
         if (finalResult.status !== PageResourceStatus.Error) {
@@ -287,7 +306,7 @@ export class BaseLoader {
               ? allData[0].webpackCompilationHash
               : ``,
           })
-          pageResources = toPageResources(pageData, components)
+          pageResources = toPageResources(pageData, rootComponent)
         }
         // undefined if final result is an error
         return pageResources

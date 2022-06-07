@@ -364,7 +364,16 @@ module.exports = async function build(
       )
       rewriteActivityTimer.start()
 
-      await appDataUtil.write(publicDir, webpackCompilationHash as string)
+      const fragmentChunkNames: Record<string, string> = {}
+      for (const fragmentName of Object.keys(state.fragments)) {
+        fragmentChunkNames[fragmentName] = state.fragments[fragmentName].componentChunkName
+      }
+
+      await appDataUtil.write(
+        publicDir, 
+        webpackCompilationHash as string,
+        fragmentChunkNames
+      )
 
       rewriteActivityTimer.end()
     }

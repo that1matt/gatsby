@@ -21,6 +21,7 @@ export { reverseFixedPagePath }
 import { processNodeManifests } from "../utils/node-manifest"
 import { IExecutionResult } from "../query/types"
 import { getPageMode } from "./page-mode"
+import { IGatsbyPageFragment, IGatsbyState } from "../internal"
 
 export interface IPageDataWithQueryResult extends IPageData {
   result: IExecutionResult
@@ -116,13 +117,14 @@ export async function readPageQueryResult(
 
 export async function writePageData(
   publicDir: string,
-  pageData: IPageData
+  pageData: IPageData,
+  fragments: IGatsbyState["fragments"]
 ): Promise<string> {
   const result = await readPageQueryResult(publicDir, pageData.path)
 
   const outputFilePath = generatePageDataPath(publicDir, pageData.path)
 
-  const body = constructPageDataString(pageData, result)
+  const body = constructPageDataString(pageData, result, fragments)
 
   // transform asset size to kB (from bytes) to fit 64 bit to numbers
   const pageDataSize = Buffer.byteLength(body) / 1000
@@ -162,6 +164,7 @@ export async function flush(parentSpan?: Span): Promise<void> {
     program,
     staticQueriesByTemplate,
     queries,
+    fragments,
   } = store.getState()
   const isBuild = program?._?.[0] !== `develop`
 
@@ -234,7 +237,8 @@ export async function flush(parentSpan?: Span): Promise<void> {
           {
             ...page,
             staticQueryHashes,
-          }
+          },
+          fragments
         )
 
         writePageDataActivity.tick()
