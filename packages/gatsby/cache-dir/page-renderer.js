@@ -14,15 +14,27 @@ class PageRenderer extends React.Component {
       },
     }
 
-    const pageElement = createElement(this.props.pageResources.component, {
-      ...props,
-      key: this.props.path || this.props.pageResources.page.path,
-    })
+    const allFragments = this.props.pageResources.page.fragments.map(
+      (fragment, index) => {
+        if (fragment.componentChunkName) {
+          return createElement(this.props.pageResources.components[index], {
+            ...fragment.result,
+            key: fragment.componentChunkName, // TODO more robust
+          })
+        } else {
+          // TODO make this prettier, not so sloppy
+          return createElement(this.props.pageResources.components[index], {
+            ...props,
+            key: this.props.path || this.props.pageResources.page.path,
+          })
+        }
+      }
+    )
 
     const wrappedPage = apiRunner(
       `wrapPageElement`,
-      { element: pageElement, props },
-      pageElement,
+      { element: allFragments, props },
+      allFragments,
       ({ result }) => {
         return { element: result, props }
       }

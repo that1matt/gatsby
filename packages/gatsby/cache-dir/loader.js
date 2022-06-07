@@ -63,7 +63,7 @@ const doesConnectionSupportPrefetch = () => {
 // Regex that matches common search crawlers
 const BOT_REGEX = /bot|crawler|spider|crawling/i
 
-const toPageResources = (pageData, component = null) => {
+const toPageResources = (pageData, components = null) => {
   const page = {
     componentChunkName: pageData.componentChunkName,
     path: pageData.path,
@@ -71,10 +71,11 @@ const toPageResources = (pageData, component = null) => {
     matchPath: pageData.matchPath,
     staticQueryHashes: pageData.staticQueryHashes,
     getServerDataError: pageData.getServerDataError,
+    fragments: pageData.fragments,
   }
 
   return {
-    component,
+    components,
     json: pageData.result,
     page,
   }
@@ -261,14 +262,24 @@ export class BaseLoader {
 
       const finalResult = {}
 
-      const componentChunkPromise = this.loadComponent(componentChunkName).then(
-        component => {
+      const componentChunkPromises = Promise.all(
+        [{ componentChunkName }, ...pageData.fragments].map(fragment =>
+          this.loadComponent(fragment.componentChunkName)
+        )
+      )
+        .then()
+        .then(components => {
           finalResult.createdAt = new Date()
+
+          for (const component of components) {
+            if (!component || component instanceof Error) {
+              finalResult.status = PageResourceStatus.Error
+              finalResult.error = component
+            }
+          }
+
           let pageResources
-          if (!component || component instanceof Error) {
-            finalResult.status = PageResourceStatus.Error
-            finalResult.error = component
-          } else {
+          if (finalResult.status !== PageResourceStatus.Error) {
             finalResult.status = PageResourceStatus.Success
             if (result.notFound === true) {
               finalResult.notFound = true
@@ -278,12 +289,11 @@ export class BaseLoader {
                 ? allData[0].webpackCompilationHash
                 : ``,
             })
-            pageResources = toPageResources(pageData, component)
+            pageResources = toPageResources(pageData, components)
           }
           // undefined if final result is an error
           return pageResources
-        }
-      )
+        })
 
       const staticQueryBatchPromise = Promise.all(
         staticQueryHashes.map(staticQueryHash => {
@@ -318,7 +328,7 @@ export class BaseLoader {
       })
 
       return (
-        Promise.all([componentChunkPromise, staticQueryBatchPromise])
+        Promise.all([componentChunkPromises, staticQueryBatchPromise])
           .then(([pageResources, staticQueryResults]) => {
             let payload
             if (pageResources) {

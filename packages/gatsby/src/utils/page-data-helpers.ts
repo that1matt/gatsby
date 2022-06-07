@@ -18,7 +18,7 @@ export function constructPageDataString(
     path: pagePath,
     staticQueryHashes,
     manifestId,
-    fragments,
+    fragments = [],
   }: IPageData,
   result: string | Buffer
 ): string {
@@ -29,18 +29,29 @@ export function constructPageDataString(
     `"result":${result},` +
     `"staticQueryHashes":${JSON.stringify(staticQueryHashes)}`
 
+  const formattedComponent = {
+    result: JSON.parse(result.toString()), // TODO optimize this
+    componentChunkName,
+  }
+
+  let formattedFragments = [formattedComponent]
+
   if (fragments) {
-    const formattedFragments = fragments.map(fragment => {
-      return {
-        result: {
-          pageContext: fragment.context,
-        },
-        componentChunkName: fragment.componentChunkName,
+    formattedFragments = fragments.map(fragment => {
+      if (fragment.componentChunkName) {
+        return {
+          result: {
+            pageContext: fragment.context,
+          },
+          componentChunkName: fragment.componentChunkName,
+        }
+      } else {
+        return formattedComponent
       }
     })
-
-    body += `,"fragments":${JSON.stringify(formattedFragments)}`
   }
+
+  body += `,"fragments":${JSON.stringify(formattedFragments)}`
 
   if (matchPath) {
     body += `,"matchPath":"${matchPath}"`
