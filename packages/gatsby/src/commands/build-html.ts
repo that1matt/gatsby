@@ -480,6 +480,12 @@ export async function buildHTMLPagesAndDeleteStaleArtifacts({
     reporter.info(`There are no new or changed html files to build.`)
   }
 
+  await buildFragments({
+    program,
+    workerPool,
+    parentSpan,
+  })
+
   if (_CFLAGS_.GATSBY_MAJOR !== `4` && !program.keepPageRenderer) {
     try {
       await deleteRenderer(pageRenderer)
@@ -521,10 +527,16 @@ export async function buildFragments({
 
   const htmlComponentRendererPath = `${program.directory}/${ROUTES_DIRECTORY}render-page.js`
   try {
+    const fragments = Array.from(store.getState().fragments.entries())
+    reporter.verbose(
+      `Building fragments:\n${fragments
+        .map(([name]) => ` - "${name}"`)
+        .join(`\n`)}`
+    )
     await workerPool.single.renderFragments({
       publicDir: path.join(program.directory, `public`),
       htmlComponentRendererPath,
-      fragments: Array.from(store.getState().fragments.entries()),
+      fragments,
     })
   } catch (e) {
     buildHTMLActivityProgress.panic(e)

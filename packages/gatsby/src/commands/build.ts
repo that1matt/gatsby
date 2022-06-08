@@ -420,12 +420,6 @@ module.exports = async function build(
 
   await waitForWorkerPoolRestart
 
-  await buildFragments({
-    program,
-    workerPool,
-    parentSpan: buildSpan,
-  })
-
   const { toRegenerate, toDelete } =
     await buildHTMLPagesAndDeleteStaleArtifacts({
       program,
