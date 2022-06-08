@@ -7,6 +7,7 @@ import { createContentDigest, generatePageDataPath } from "gatsby-core-utils"
 import { websocketManager } from "./websocket-manager"
 import { isWebpackStatusPending } from "./webpack-status"
 import { store } from "../redux"
+import type { IGatsbyPageFragment } from "../redux/types"
 import { hasFlag, FLAG_DIRTY_NEW_PAGE } from "../redux/reducers/queries"
 import { isLmdbStore } from "../datastore"
 import type GatsbyCacheLmdb from "./cache-lmdb"
@@ -33,7 +34,6 @@ export async function readPageData(
 ): Promise<IPageDataWithQueryResult> {
   const filePath = generatePageDataPath(publicDir, pagePath)
   const rawPageData = await fs.readFile(filePath, `utf-8`)
-
   return JSON.parse(rawPageData)
 }
 
@@ -139,6 +139,24 @@ export async function writePageData(
     },
   })
 
+  await fs.outputFile(outputFilePath, body)
+  return body
+}
+
+export async function writeFragmentData(
+  publicDir: string,
+  { componentChunkName, context, name }: IGatsbyPageFragment,
+  staticQueryHashes: Array<string>
+): Promise<string> {
+  const outputFilePath = path.join(publicDir, `fragment-data`, `${name}.json`)
+
+  const body = JSON.stringify({
+    componentChunkName,
+    result: {
+      layoutContext: context,
+    },
+    staticQueryHashes,
+  })
   await fs.outputFile(outputFilePath, body)
   return body
 }
@@ -267,6 +285,16 @@ export async function flush(parentSpan?: Span): Promise<void> {
 
   for (const pagePath of pagePaths) {
     flushQueue.push(pagePath, () => {})
+  }
+  for (const fragment of fragments.values()) {
+    const staticQueryHashes =
+      staticQueriesByTemplate.get(fragment.componentPath) || []
+
+    await writeFragmentData(
+      path.join(program.directory, `public`),
+      fragment,
+      staticQueryHashes
+    )
   }
 
   if (!flushQueue.idle()) {

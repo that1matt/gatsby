@@ -1,10 +1,9 @@
 import type { IStructuredError } from "gatsby-cli/src/structured-errors/types"
 import { IGatsbyPage, IGatsbyState } from "../redux/types"
-import { getFragmentId } from "./fragments"
 
 export interface IPageData {
   componentChunkName: IGatsbyPage["componentChunkName"]
-  matchPath?: IGatsbyPage["matchPath"]
+  matchPath: IGatsbyPage["matchPath"]
   path: IGatsbyPage["path"]
   staticQueryHashes: Array<string>
   getServerDataError?: IStructuredError | Array<IStructuredError> | null
@@ -27,7 +26,7 @@ export function constructPageDataString(
   let body =
     `{` +
     `"componentChunkName":"${componentChunkName}",` +
-    `"path":${JSON.stringify(pagePath)},` +
+    (pagePath ? `"path":${JSON.stringify(pagePath)},` : ``) +
     `"result":${result},` +
     `"staticQueryHashes":${JSON.stringify(staticQueryHashes)}`
 
@@ -35,14 +34,7 @@ export function constructPageDataString(
 
   if (fragments) {
     for (const fragment of fragments.values()) {
-      let formattedFragment = {
-        result: {
-          layoutContext: fragment.context,
-        },
-        componentChunkName: fragment.componentChunkName,
-        id: fragment.name,
-        name: fragment.name,
-      }
+      let concreteFragmentForFragmentSlot = fragment.name
 
       if (overrideFragments[fragment.name]) {
         if (!fragments.has(overrideFragments[fragment.name])) {
@@ -54,21 +46,23 @@ export function constructPageDataString(
           overrideFragments[fragment.name]
         )!
 
-        formattedFragment = {
-          result: {
-            layoutContext: overrideComponent.context,
-          },
-          componentChunkName: overrideComponent.componentChunkName,
-          id: overrideComponent.name,
-          name: fragment.name,
-        }
+        concreteFragmentForFragmentSlot = overrideComponent.name
+
+        // formattedFragment = {
+        //   result: {
+        //     layoutContext: overrideComponent.context,
+        //   },
+        //   componentChunkName: overrideComponent.componentChunkName,
+        //   id: overrideComponent.name,
+        //   name: fragment.name,
+        // }
       }
 
-      formattedFragments[fragment.name] = formattedFragment
+      formattedFragments[fragment.name] = concreteFragmentForFragmentSlot
     }
   }
 
-  body += `,"fragments":${JSON.stringify(formattedFragments)}`
+  body += `,"fragmentsMap":${JSON.stringify(formattedFragments)}`
 
   if (matchPath) {
     body += `,"matchPath":"${matchPath}"`
