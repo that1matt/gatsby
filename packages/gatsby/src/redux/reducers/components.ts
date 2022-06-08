@@ -21,6 +21,7 @@ export const componentsReducer = (
           isInBootstrap: true,
           serverData: false,
           config: false,
+          isFragment: true,
         }
       }
       component.isInBootstrap = programStatus === `BOOTSTRAPPING`
@@ -44,6 +45,7 @@ export const componentsReducer = (
           isInBootstrap: true,
           serverData: false,
           config: false,
+          isFragment: false,
         }
       }
       component.pages.add(action.payload.path)

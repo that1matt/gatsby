@@ -63,6 +63,7 @@ type PageMode = "SSG" | "DSG" | "SSR"
 interface IGatsbyPageComponent {
   componentPath: string
   pages: Set<string>
+  isFragment: boolean
 }
 interface IGatsbyPage {
   mode: PageMode

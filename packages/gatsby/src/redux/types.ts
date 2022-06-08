@@ -161,6 +161,7 @@ export interface IGatsbyPageComponent {
   isInBootstrap: boolean
   serverData: boolean
   config: boolean
+  isFragment: boolean
 }
 
 export interface IDefinitionMeta {

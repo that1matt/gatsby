@@ -12,6 +12,7 @@ import {
 interface IPageTreeProps {
   components: Map<string, IComponentWithPageModes>
   root: string
+  fragments: Set<string>
 }
 
 const Description: React.FC<BoxProps> = function Description(props) {
@@ -83,6 +84,7 @@ const ComponentTree: React.FC<{
 const PageTree: React.FC<IPageTreeProps> = function PageTree({
   components,
   root,
+  fragments,
 }) {
   const componentList: Array<ReactElement> = []
   let i = 0
@@ -106,6 +108,16 @@ const PageTree: React.FC<IPageTreeProps> = function PageTree({
         <Text underline>Pages</Text>
       </Box>
       {componentList}
+      <Box paddingTop={1} paddingBottom={1}>
+        <Text underline>Fragments</Text>
+      </Box>
+      {Array.from(fragments).map(fragment => (
+        <Box key={fragment}>
+          <Text>
+            <Text bold>·</Text> {path.posix.relative(root, fragment)}
+          </Text>
+        </Box>
+      ))}
       <Description marginTop={1} marginBottom={1} />
     </Box>
   )
@@ -115,21 +127,31 @@ const ConnectedPageTree: React.FC = function ConnectedPageTree() {
   const state = useContext(StoreStateContext)
 
   const componentWithPages = new Map<string, IComponentWithPageModes>()
+  const fragments = new Set<string>()
 
-  for (const { componentPath, pages } of state.pageTree!.components.values()) {
+  for (const {
+    componentPath,
+    pages,
+    isFragment,
+  } of state.pageTree!.components.values()) {
     const pagesByMode = {
       SSG: new Set<string>(),
       DSG: new Set<string>(),
       SSR: new Set<string>(),
       FN: new Set<string>(),
     }
-    pages.forEach(pagePath => {
-      const gatsbyPage = state.pageTree!.pages.get(pagePath)
 
-      pagesByMode[gatsbyPage!.mode].add(pagePath)
-    })
+    if (isFragment) {
+      fragments.add(componentPath)
+    } else {
+      pages.forEach(pagePath => {
+        const gatsbyPage = state.pageTree!.pages.get(pagePath)
 
-    componentWithPages.set(componentPath, pagesByMode)
+        pagesByMode[gatsbyPage!.mode].add(pagePath)
+      })
+
+      componentWithPages.set(componentPath, pagesByMode)
+    }
   }
 
   for (const {
@@ -145,7 +167,11 @@ const ConnectedPageTree: React.FC = function ConnectedPageTree() {
   }
 
   return (
-    <PageTree components={componentWithPages} root={state.pageTree!.root} />
+    <PageTree
+      components={componentWithPages}
+      fragments={fragments}
+      root={state.pageTree!.root}
+    />
   )
 }
 

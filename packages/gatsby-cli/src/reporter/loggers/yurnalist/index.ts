@@ -33,7 +33,12 @@ function generatePageTreeToConsole(
 ): void {
   const root = state.root
   const componentWithPages = new Map<string, IComponentWithPageModes>()
-  for (const { componentPath, pages } of state.components.values()) {
+  const fragments = new Set<string>()
+  for (const {
+    componentPath,
+    pages,
+    isFragment,
+  } of state.components.values()) {
     const pagesByMode = {
       SSG: new Set<string>(),
       DSG: new Set<string>(),
@@ -46,10 +51,14 @@ function generatePageTreeToConsole(
       pagesByMode[gatsbyPage!.mode].add(pagePath)
     })
 
-    componentWithPages.set(
-      path.posix.relative(root, componentPath),
-      pagesByMode
-    )
+    if (isFragment) {
+      fragments.add(path.posix.relative(root, componentPath))
+    } else {
+      componentWithPages.set(
+        path.posix.relative(root, componentPath),
+        pagesByMode
+      )
+    }
   }
 
   for (const {
@@ -97,6 +106,13 @@ function generatePageTreeToConsole(
 
     i++
   }
+
+  pageTreeConsole.push(``)
+  pageTreeConsole.push(`\n${chalk.underline(`Fragments`)}\n`)
+
+  Array.from(fragments).forEach(fragment => {
+    pageTreeConsole.push(`· ${fragment}`)
+  })
 
   pageTreeConsole.push(``)
   pageTreeConsole.push(
