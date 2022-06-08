@@ -63,7 +63,7 @@ export interface IGatsbyPage {
 }
 
 export interface IGatsbyPageFragment {
-  component: string
+  componentPath: string
   componentChunkName: string
   context: Record<string, unknown>
   name: string

@@ -46,6 +46,23 @@ const inFlightResourcesForTemplate = new Map<
   Promise<IResourcesForTemplate>
 >()
 
+const readStaticQueryContext = async (
+  templatePath: string
+): Promise<Record<string, { data: unknown }>> => {
+  const filePath = path.join(
+    // TODO: Better way to get this?
+    process.cwd(),
+    `.cache`,
+    `page-ssr`,
+    `sq-context`,
+    templatePath,
+    `sq-context.json`
+  )
+  const rawSQContext = await fs.readFile(filePath, `utf-8`)
+
+  return JSON.parse(rawSQContext)
+}
+
 function clearCaches(): void {
   clearStaticQueryCaches()
   resourcesForTemplateCache.clear()
@@ -275,9 +292,16 @@ export async function renderFragments({
   const htmlComponentRenderer = require(htmlComponentRendererPath)
 
   for (const [fileName, fragment] of fragments) {
+    const staticQueryContext = await readStaticQueryContext(
+      fragment.componentChunkName
+    )
+
     await fs.outputFile(
       path.join(publicDir, `_gatsby`, `fragments`, `${fileName}.html`),
-      await htmlComponentRenderer.renderFragment({ fragment })
+      await htmlComponentRenderer.renderFragment({
+        fragment,
+        staticQueryContext,
+      })
     )
   }
 }

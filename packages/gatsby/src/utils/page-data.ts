@@ -21,7 +21,7 @@ export { reverseFixedPagePath }
 import { processNodeManifests } from "../utils/node-manifest"
 import { IExecutionResult } from "../query/types"
 import { getPageMode } from "./page-mode"
-import { IGatsbyPageFragment, IGatsbyState } from "../internal"
+import { IGatsbyState } from "../internal"
 
 export interface IPageDataWithQueryResult extends IPageData {
   result: IExecutionResult

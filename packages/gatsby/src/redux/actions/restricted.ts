@@ -21,6 +21,7 @@ import {
   IGatsbyPluginContext,
 } from "../types"
 import { generateComponentChunkName } from "../../utils/js-chunk-names"
+import normalizePath from "normalize-path"
 
 type RestrictionActionNames =
   | "createFieldExtension"
@@ -425,23 +426,28 @@ export const actions = {
 
   createFragment: (
     payload: {
-      name: string, 
-      component: string, 
+      name: string
+      component: string
       context: Record<string, unknown>
     },
     plugin: IGatsbyPlugin,
-    traceId?: string,
+    traceId?: string
   ) => {
     return {
       type: `CREATE_FRAGMENT`,
       plugin,
       payload: {
-        componentChunkName: generateComponentChunkName(payload.component, "fragment"),
+        componentChunkName: generateComponentChunkName(
+          payload.component,
+          `fragment`
+        ),
+        componentPath: normalizePath(payload.component),
+        // We could remove "component" from payload destructurign
         ...payload,
       },
       traceId,
     }
-  }
+  },
 }
 
 const withDeprecationWarning =

@@ -10,6 +10,23 @@ export const componentsReducer = (
   action: ActionsUnion
 ): IGatsbyState["components"] => {
   switch (action.type) {
+    case `CREATE_FRAGMENT`: {
+      let component = state.get(action.payload.componentPath)
+      if (!component) {
+        component = {
+          componentPath: action.payload.componentPath,
+          componentChunkName: action.payload.componentChunkName,
+          query: ``,
+          pages: new Set(),
+          isInBootstrap: true,
+          serverData: false,
+          config: false,
+        }
+      }
+      component.isInBootstrap = programStatus === `BOOTSTRAPPING`
+      state.set(action.payload.componentPath, component)
+      return state
+    }
     case `DELETE_CACHE`:
       return new Map()
     case `SET_PROGRAM_STATUS`:

@@ -172,12 +172,16 @@ const watchComponent = (componentPath: string): void => {
  * Removes components templates that aren't used by any page from redux store.
  */
 const clearInactiveComponents = (): void => {
-  const { components, pages } = store.getState()
+  const { components, pages, fragments } = store.getState()
 
   const activeTemplates = new Set()
   pages.forEach(page => {
     // Set will guarantee uniqueness of entries
-    activeTemplates.add(slash(page.component))
+    activeTemplates.add(slash(page.componentPath))
+  })
+  fragments.forEach(fragment => {
+    // Set will guarantee uniqueness of entries
+    activeTemplates.add(slash(fragment.componentPath))
   })
 
   components.forEach(component => {

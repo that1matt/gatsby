@@ -15,7 +15,7 @@ import {
 import { getPageMode } from "../utils/page-mode"
 
 interface IGatsbyPageComponent {
-  component: string
+  componentPath: string
   componentChunkName: string
 }
 
@@ -61,12 +61,18 @@ export const resetLastHash = (): void => {
   lastHash = null
 }
 
-type IBareComponentData = Pick<IGatsbyPageComponent, `component` | `componentChunkName`>
-const pickComponentFields = (page: IGatsbyPage | IGatsbyPageFragment): IBareComponentData =>
-  ({
-    component: page.component,
-    componentChunkName: page.componentChunkName
-  })
+type IBareComponentData = Pick<
+  IGatsbyPageComponent,
+  `componentPath` | `componentChunkName`
+>
+const pickComponentFields = (
+  page: IGatsbyPage | IGatsbyPageFragment
+): IBareComponentData => {
+  return {
+    componentPath: page.componentPath,
+    componentChunkName: page.componentChunkName,
+  }
+}
 
 export const getComponents = (
   pages: Array<IGatsbyPage>,
@@ -230,7 +236,7 @@ export const writeAll = async (state: IGatsbyState): Promise<boolean> => {
       .map(
         (c: IGatsbyPageComponent): string =>
           `  "${c.componentChunkName}": preferDefault(require("${joinPath(
-            c.component
+            c.componentPath
           )}"))`
       )
       .join(`,\n`)}
@@ -250,7 +256,7 @@ const preferDefault = m => (m && m.default) || m
     .map(
       (c: IGatsbyPageComponent): string =>
         `  "${c.componentChunkName}": preferDefault(require("${joinPath(
-          c.component
+          c.componentPath
         )}"))`
     )
     .join(`,\n`)}
@@ -262,7 +268,7 @@ const preferDefault = m => (m && m.default) || m
       // we need a relative import path to keep contenthash the same if directory changes
       const relativeComponentPath = path.relative(
         getAbsolutePathForVirtualModule(`$virtual`),
-        c.component
+        c.componentPath
       )
 
       return `  "${c.componentChunkName}": () => import("${slash(
