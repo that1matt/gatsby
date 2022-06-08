@@ -6,7 +6,7 @@ const PageFragment = ({ name }) => {
   if (typeof window === `undefined`) {
     return (
       <esi:include
-        src={`/_gatsby/fragments/${global.fragmentsMap[name]}.html`}
+        src={`/_gatsby/fragments/${fragmentsMap[name]}.html`}
       ></esi:include>
     )
   } else {

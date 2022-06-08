@@ -8,7 +8,7 @@ const {
 } = require(`react-dom/server`)
 const { ServerLocation, Router, isRedirect } = require(`@gatsbyjs/reach-router`)
 const merge = require(`deepmerge`)
-const { StaticQueryContext } = require(`gatsby`)
+const { StaticQueryContext, FragmentsMapContext } = require(`gatsby`)
 const fs = require(`fs`)
 const { WritableAsPromise } = require(`./server-utils/writable-as-promise`)
 
@@ -204,7 +204,6 @@ export default async function staticPage({
 
     const { componentChunkName, fragmentsMap } = pageData
     const pageComponent = await asyncRequires.components[componentChunkName]()
-    global.fragmentsMap = fragmentsMap
 
     class RouteHandler extends React.Component {
       render() {
@@ -243,14 +242,16 @@ export default async function staticPage({
 
     const bodyComponent = (
       <StaticQueryContext.Provider value={staticQueryContext}>
-        {apiRunner(
-          `wrapRootElement`,
-          { element: routerElement, pathname: pagePath },
-          routerElement,
-          ({ result }) => {
-            return { element: result, pathname: pagePath }
-          }
-        ).pop()}
+        <FragmentsMapContext.Provider value={fragmentsMap}>
+          {apiRunner(
+            `wrapRootElement`,
+            { element: routerElement, pathname: pagePath },
+            routerElement,
+            ({ result }) => {
+              return { element: result, pathname: pagePath }
+            }
+          ).pop()}
+        </FragmentsMapContext.Provider>
       </StaticQueryContext.Provider>
     )
 

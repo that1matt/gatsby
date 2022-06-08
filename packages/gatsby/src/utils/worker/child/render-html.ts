@@ -226,7 +226,7 @@ export const renderHTMLProd = async ({
         }
       }
     },
-    { concurrency: 1 } // TODO change this to 2 and useContext for fragment state
+    { concurrency: 2 }
   )
 
   return { unsafeBuiltinsUsageByPagePath, previewErrors }
