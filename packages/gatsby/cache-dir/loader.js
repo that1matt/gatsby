@@ -98,10 +98,11 @@ export class BaseLoader {
     //   },
     //   staticQueryResults
     // }
-    this.pageDb = new Map()
+    window.pageDb = this.pageDb = new Map()
     this.inFlightDb = new Map()
     this.staticQueryDb = {}
-    this.pageDataDb = new Map()
+    window.pageDataDb = this.pageDataDb = new Map()
+    window.fragmentsDb = this.fragmentsDb = new Map()
     this.isPrefetchQueueRunning = false
     this.prefetchQueued = []
     this.prefetchTriggered = new Set()
@@ -221,6 +222,20 @@ export class BaseLoader {
     })
   }
 
+  loadFragmentDataJson(fragmentName) {
+    if (this.fragmentsDb.has(fragmentName)) {
+      const jsonPayload = this.fragmentsDb.get(fragmentName)
+      return Promise.resolve({ fragmentName, jsonPayload })
+    }
+
+    // TODO: setup correct (no)caching headers
+    const url = `/fragment-data/${fragmentName}.json?v=${Date.now()}`
+    return doFetch(url, `GET`).then(res => {
+      const jsonPayload = JSON.parse(res.responseText)
+      return { fragmentName, jsonPayload }
+    })
+  }
+
   findMatchPath(rawPath) {
     return findMatchPath(rawPath)
   }
@@ -260,9 +275,25 @@ export class BaseLoader {
       }
 
       let pageData = result.payload
-      const { componentChunkName, staticQueryHashes = [] } = pageData
+      const {
+        componentChunkName,
+        staticQueryHashes: pageStaticQueryHashes = [],
+        fragmentsMap,
+      } = pageData
+
+      //     "fragmentsMap": {
+      //   "header": "header-fr",
+      //   "header-fr": "header-fr",
+      //   "about-author": "about-author",
+      //   "footer": "footer"
+      // }
+      window.fragmentsMap = fragmentsMap
 
       const finalResult = {}
+
+      const dedupedFragmentNames = Array.from(
+        new Set(Object.values(fragmentsMap))
+      )
 
       const loadFragmentComponent = fragment =>
         new Promise(res => {
@@ -271,118 +302,136 @@ export class BaseLoader {
           )
         })
 
-      const componentChunkPromises = Promise.all([
-        this.loadComponent(componentChunkName),
-        Promise.all(
-          Array.from(Object.values(pageData.fragments)).map(fragment =>
-            loadFragmentComponent(fragment)
-          )
-        ),
-      ]).then(components => {
-        const [rootComponent, fragments] = components
-        finalResult.createdAt = new Date()
+      return Promise.all(
+        dedupedFragmentNames.map(fragmentName =>
+          this.loadFragmentDataJson(fragmentName)
+        )
+      ).then(fragmentsData => {
+        // fragmentsData = [{ jsonPayload, fragmentName: "headers-fr" }]
 
-        for (const fragmentArray of fragments) {
-          const [fragment, component] = fragmentArray
-          if (!component || component instanceof Error) {
+        const fragments = []
+        const dedupedStaticQueryHashes = [...pageStaticQueryHashes]
+        for (const { jsonPayload, fragmentName } of Object.values(
+          fragmentsData
+        )) {
+          fragments.push({ name: fragmentName, ...jsonPayload })
+          for (const staticQueryHash of jsonPayload.staticQueryHashes) {
+            if (!dedupedStaticQueryHashes.includes(staticQueryHash)) {
+              dedupedStaticQueryHashes.push(staticQueryHash)
+            }
+          }
+        }
+
+        // get list of components to get
+        const componentChunkPromises = Promise.all([
+          this.loadComponent(componentChunkName),
+          Promise.all(fragments.map(loadFragmentComponent)),
+        ]).then(components => {
+          const [rootComponent, fragments] = components
+          finalResult.createdAt = new Date()
+
+          for (const fragmentArray of fragments) {
+            const [fragment, component] = fragmentArray
+            if (!component || component instanceof Error) {
+              finalResult.status = PageResourceStatus.Error
+              finalResult.error = component
+            }
+            windowPageFragments.set(fragment.name, {
+              component,
+              layoutContext: fragment.result.layoutContext,
+            })
+          }
+
+          if (!rootComponent || rootComponent instanceof Error) {
             finalResult.status = PageResourceStatus.Error
-            finalResult.error = component
+            finalResult.error = rootComponent
           }
 
-          windowPageFragments.set(fragment.name, {
-            component,
-            layoutContext: fragment.result.layoutContext,
-          })
-        }
+          window.pageFragments = windowPageFragments
 
-        if (!rootComponent || rootComponent instanceof Error) {
-          finalResult.status = PageResourceStatus.Error
-          finalResult.error = rootComponent
-        }
-
-        window.pageFragments = windowPageFragments
-
-        let pageResources
-        if (finalResult.status !== PageResourceStatus.Error) {
-          finalResult.status = PageResourceStatus.Success
-          if (result.notFound === true) {
-            finalResult.notFound = true
+          let pageResources
+          if (finalResult.status !== PageResourceStatus.Error) {
+            finalResult.status = PageResourceStatus.Success
+            if (result.notFound === true) {
+              finalResult.notFound = true
+            }
+            pageData = Object.assign(pageData, {
+              webpackCompilationHash: allData[0]
+                ? allData[0].webpackCompilationHash
+                : ``,
+            })
+            pageResources = toPageResources(pageData, rootComponent)
           }
-          pageData = Object.assign(pageData, {
-            webpackCompilationHash: allData[0]
-              ? allData[0].webpackCompilationHash
-              : ``,
-          })
-          pageResources = toPageResources(pageData, rootComponent)
-        }
-        // undefined if final result is an error
-        return pageResources
-      })
+          // undefined if final result is an error
+          return pageResources
+        })
 
-      const staticQueryBatchPromise = Promise.all(
-        staticQueryHashes.map(staticQueryHash => {
-          // Check for cache in case this static query result has already been loaded
-          if (this.staticQueryDb[staticQueryHash]) {
-            const jsonPayload = this.staticQueryDb[staticQueryHash]
-            return { staticQueryHash, jsonPayload }
-          }
-
-          return this.memoizedGet(
-            `${__PATH_PREFIX__}/page-data/sq/d/${staticQueryHash}.json`
-          )
-            .then(req => {
-              const jsonPayload = JSON.parse(req.responseText)
+        // get list of static queries to get
+        const staticQueryBatchPromise = Promise.all(
+          dedupedStaticQueryHashes.map(staticQueryHash => {
+            // Check for cache in case this static query result has already been loaded
+            if (this.staticQueryDb[staticQueryHash]) {
+              const jsonPayload = this.staticQueryDb[staticQueryHash]
               return { staticQueryHash, jsonPayload }
-            })
-            .catch(() => {
-              throw new Error(
-                `We couldn't load "${__PATH_PREFIX__}/page-data/sq/d/${staticQueryHash}.json"`
-              )
-            })
-        })
-      ).then(staticQueryResults => {
-        const staticQueryResultsMap = {}
+            }
 
-        staticQueryResults.forEach(({ staticQueryHash, jsonPayload }) => {
-          staticQueryResultsMap[staticQueryHash] = jsonPayload
-          this.staticQueryDb[staticQueryHash] = jsonPayload
-        })
-
-        return staticQueryResultsMap
-      })
-
-      return (
-        Promise.all([componentChunkPromises, staticQueryBatchPromise])
-          .then(([pageResources, staticQueryResults]) => {
-            let payload
-            if (pageResources) {
-              payload = { ...pageResources, staticQueryResults }
-              finalResult.payload = payload
-              emitter.emit(`onPostLoadPageResources`, {
-                page: payload,
-                pageResources: payload,
+            return this.memoizedGet(
+              `${__PATH_PREFIX__}/page-data/sq/d/${staticQueryHash}.json`
+            )
+              .then(req => {
+                const jsonPayload = JSON.parse(req.responseText)
+                return { staticQueryHash, jsonPayload }
               })
-            }
+              .catch(() => {
+                throw new Error(
+                  `We couldn't load "${__PATH_PREFIX__}/page-data/sq/d/${staticQueryHash}.json"`
+                )
+              })
+          })
+        ).then(staticQueryResults => {
+          const staticQueryResultsMap = {}
 
-            this.pageDb.set(pagePath, finalResult)
+          staticQueryResults.forEach(({ staticQueryHash, jsonPayload }) => {
+            staticQueryResultsMap[staticQueryHash] = jsonPayload
+            this.staticQueryDb[staticQueryHash] = jsonPayload
+          })
 
-            if (finalResult.error) {
-              return {
-                error: finalResult.error,
-                status: finalResult.status,
+          return staticQueryResultsMap
+        })
+
+        return (
+          Promise.all([componentChunkPromises, staticQueryBatchPromise])
+            .then(([pageResources, staticQueryResults]) => {
+              let payload
+              if (pageResources) {
+                payload = { ...pageResources, staticQueryResults }
+                finalResult.payload = payload
+                emitter.emit(`onPostLoadPageResources`, {
+                  page: payload,
+                  pageResources: payload,
+                })
               }
-            }
 
-            return payload
-          })
-          // when static-query fail to load we throw a better error
-          .catch(err => {
-            return {
-              error: err,
-              status: PageResourceStatus.Error,
-            }
-          })
-      )
+              this.pageDb.set(pagePath, finalResult)
+
+              if (finalResult.error) {
+                return {
+                  error: finalResult.error,
+                  status: finalResult.status,
+                }
+              }
+
+              return payload
+            })
+            // when static-query fail to load we throw a better error
+            .catch(err => {
+              return {
+                error: err,
+                status: PageResourceStatus.Error,
+              }
+            })
+        )
+      })
     })
 
     inFlightPromise
