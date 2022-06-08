@@ -3,7 +3,7 @@ import { apiRunner, apiRunnerAsync } from "./api-runner-browser"
 import React from "react"
 import { Router, navigate, Location, BaseContext } from "@gatsbyjs/reach-router"
 import { ScrollContext } from "gatsby-react-router-scroll"
-import { StaticQueryContext } from "gatsby"
+import { StaticQueryContext, FragmentsMapContext } from "gatsby"
 import {
   shouldUpdateScroll,
   init as navigationInit,
@@ -89,9 +89,13 @@ apiRunnerAsync(`onClientEntry`).then(() => {
                 const staticQueryResults = getStaticQueryResults()
                 return (
                   <StaticQueryContext.Provider value={staticQueryResults}>
-                    <DataContext.Provider value={{ pageResources, location }}>
-                      {children}
-                    </DataContext.Provider>
+                    <FragmentsMapContext.Provider
+                      value={pageResources.page.fragmentsMap}
+                    >
+                      <DataContext.Provider value={{ pageResources, location }}>
+                        {children}
+                      </DataContext.Provider>
+                    </FragmentsMapContext.Provider>
                   </StaticQueryContext.Provider>
                 )
               }}

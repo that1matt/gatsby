@@ -17,6 +17,7 @@ import PageFragment from "./page-fragment"
 const prefetchPathname = loader.enqueue
 
 const StaticQueryContext = React.createContext({})
+const FragmentsMapContext = React.createContext({})
 
 function StaticQueryDataRenderer({ staticQueryData, data, query, render }) {
   const finalData = data
@@ -108,6 +109,7 @@ export {
   navigate,
   useScrollRestoration,
   StaticQueryContext,
+  FragmentsMapContext,
   StaticQuery,
   PageRenderer,
   useStaticQuery,

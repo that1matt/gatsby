@@ -71,7 +71,7 @@ const toPageResources = (pageData, component = null) => {
     matchPath: pageData.matchPath,
     staticQueryHashes: pageData.staticQueryHashes,
     getServerDataError: pageData.getServerDataError,
-    fragments: pageData.fragments,
+    fragmentsMap: pageData.fragmentsMap,
   }
 
   return {
@@ -287,7 +287,6 @@ export class BaseLoader {
       //   "about-author": "about-author",
       //   "footer": "footer"
       // }
-      window.fragmentsMap = fragmentsMap
 
       const finalResult = {}
 
