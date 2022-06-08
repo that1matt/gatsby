@@ -46,8 +46,12 @@ export function constructPageDataString(
 
       if (overrideFragments[fragment.name]) {
         if (!fragments.has(overrideFragments[fragment.name])) {
-          // TODO don't freak out
-          throw new Error(`"AHHHH" ${fragment.name}`)
+          // TODO throw the right kind of error
+          const message =
+            `Could not find fragment "${overrideFragments[fragment.name]}". ` +
+            `Please check your createPages in your gatsby-node to verify this ` +
+            `is the correct name.`
+          throw new Error(message)
         }
 
         const overrideComponent = fragments.get(
