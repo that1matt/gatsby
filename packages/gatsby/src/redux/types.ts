@@ -360,6 +360,7 @@ export interface IGatsbyState {
     ssrCompilationHash: string
     trackedStaticQueryResults: Map<string, IStaticQueryResultState>
     unsafeBuiltinWasUsedInSSR: boolean
+    templateCompilationHashes: Record<string, string>
   }
   fragments: Map<string, IGatsbyPageFragment>
 }
@@ -413,7 +414,7 @@ export type ActionsUnion =
   | ISetGraphQLDefinitionsAction
   | ISetSiteFlattenedPluginsAction
   | ISetWebpackCompilationHashAction
-  | ISetSSRWebpackCompilationHashAction
+  | ISetSSRGlobalSharedWebpackCompilationHashAction
   | ISetWebpackConfigAction
   | ITouchNodeAction
   | IUpdatePluginsHashAction
@@ -453,6 +454,7 @@ export type ActionsUnion =
   | IClearJobV2Context
   | ISetDomainRequestHeaders
   | ICreateFragmentAction
+  | ISetSSRTemplateWebpackCompilationHashAction
 
 export interface ISetComponentFeatures {
   type: `SET_COMPONENT_FEATURES`
@@ -799,9 +801,18 @@ export interface ISetWebpackCompilationHashAction {
   payload: IGatsbyState["webpackCompilationHash"]
 }
 
-export interface ISetSSRWebpackCompilationHashAction {
-  type: `SET_SSR_WEBPACK_COMPILATION_HASH`
+export interface ISetSSRGlobalSharedWebpackCompilationHashAction {
+  type: `SET_SSR_GLOBAL_SHARED_WEBPACK_COMPILATION_HASH`
   payload: string
+}
+
+export interface ISetSSRTemplateWebpackCompilationHashAction {
+  type: `SET_SSR_TEMPLATE_WEBPACK_COMPILATION_HASH`
+  payload: {
+    templateHash: string
+    templatePath: string
+    pages: Array<string>
+  }
 }
 
 export interface IUpdatePluginsHashAction {

@@ -64,6 +64,7 @@ import {
 import { validateEngines } from "../utils/validate-engines"
 import { constructConfigObject } from "../utils/gatsby-cloud-config"
 import { waitUntilWorkerJobsAreComplete } from "../utils/jobs/worker-messaging"
+import { getSSRChunkHashes } from "../utils/webpack/get-ssr-chunk-hashes"
 
 module.exports = async function build(
   program: IBuildArgs,
@@ -146,6 +147,7 @@ module.exports = async function build(
   let webpackAssets: Array<webpack.StatsAsset> | null = null
   let webpackCompilationHash: string | null = null
   let webpackSSRCompilationHash: string | null = null
+  let templateCompilationHashes: Record<string, string> = {}
 
   const engineBundlingPromises: Array<Promise<any>> = []
   const buildActivityTimer = report.activityTimer(
@@ -222,7 +224,12 @@ module.exports = async function build(
     )
 
     closeHTMLBundleCompilation = close
-    webpackSSRCompilationHash = stats.hash as string
+    const { renderPageHash, templateHashes } = getSSRChunkHashes({
+      stats,
+      components: store.getState().components,
+    })
+    webpackSSRCompilationHash = renderPageHash
+    templateCompilationHashes = templateHashes
 
     await close()
   } catch (err) {
@@ -379,9 +386,22 @@ module.exports = async function build(
       rewriteActivityTimer.end()
     }
 
+    Object.entries(templateCompilationHashes).forEach(
+      ([templatePath, templateHash]) => {
+        store.dispatch({
+          type: `SET_SSR_TEMPLATE_WEBPACK_COMPILATION_HASH`,
+          payload: {
+            templatePath,
+            templateHash,
+            pages: store.getState().components.get(templatePath)?.pages,
+          },
+        })
+      }
+    )
+
     if (state.html.ssrCompilationHash !== webpackSSRCompilationHash) {
       store.dispatch({
-        type: `SET_SSR_WEBPACK_COMPILATION_HASH`,
+        type: `SET_SSR_GLOBAL_SHARED_WEBPACK_COMPILATION_HASH`,
         payload: webpackSSRCompilationHash,
       })
     }

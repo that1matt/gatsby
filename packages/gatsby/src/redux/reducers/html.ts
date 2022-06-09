@@ -22,6 +22,7 @@ function initialState(): IGatsbyState["html"] {
     ssrCompilationHash: ``,
     trackedStaticQueryResults: new Map<string, IStaticQueryResultState>(),
     unsafeBuiltinWasUsedInSSR: false,
+    templateCompilationHashes: {},
   }
 }
 
@@ -39,6 +40,7 @@ export function htmlReducer(
         // if they are recreated "isDeleted" flag will be removed
         state.browserCompilationHash = ``
         state.ssrCompilationHash = ``
+        state.templateCompilationHashes = {}
         state.trackedStaticQueryResults.clear()
         state.unsafeBuiltinWasUsedInSSR = false
         state.trackedHtmlFiles.forEach(htmlFile => {
@@ -135,6 +137,8 @@ export function htmlReducer(
       return state
     }
 
+    /*
+    we'll need this for when ESI include is not available
     case `SET_WEBPACK_COMPILATION_HASH`: {
       if (state.browserCompilationHash !== action.payload) {
         state.browserCompilationHash = action.payload
@@ -144,8 +148,28 @@ export function htmlReducer(
       }
       return state
     }
+    */
 
-    case `SET_SSR_WEBPACK_COMPILATION_HASH`: {
+    case `SET_SSR_TEMPLATE_WEBPACK_COMPILATION_HASH`: {
+      if (
+        state.templateCompilationHashes[action.payload.templatePath] !==
+        action.payload.templateHash
+      ) {
+        state.templateCompilationHashes[action.payload.templatePath] =
+          action.payload.templateHash
+
+        action.payload.pages.forEach(pagePath => {
+          const htmlFile = state.trackedHtmlFiles.get(pagePath)
+          if (htmlFile) {
+            htmlFile.dirty |= FLAG_DIRTY_SSR_COMPILATION_HASH
+          }
+        })
+      }
+
+      return state
+    }
+
+    case `SET_SSR_GLOBAL_SHARED_WEBPACK_COMPILATION_HASH`: {
       if (state.ssrCompilationHash !== action.payload) {
         state.ssrCompilationHash = action.payload
         // we will mark every html file as dirty, so we can safely reset
