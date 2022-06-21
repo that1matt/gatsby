@@ -90,6 +90,7 @@ function preset(context, options = {}) {
           availableFlags: availableCompilerFlags,
         },
       ],
+      r(`babel-plugin-lodash`),
     ].filter(Boolean),
     overrides: [
       {

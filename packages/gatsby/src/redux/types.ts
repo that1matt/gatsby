@@ -262,6 +262,7 @@ export interface IGatsbyState {
   nodesTouched: Set<string>
   nodeManifests: Array<INodeManifest>
   requestHeaders: Map<string, { [header: string]: string }>
+  telemetry: ITelemetry
   lastAction: ActionsUnion
   flattenedPlugins: Array<{
     resolve: SystemPath
@@ -455,6 +456,8 @@ export type ActionsUnion =
   | ISetDomainRequestHeaders
   | ICreateFragmentAction
   | ISetSSRTemplateWebpackCompilationHashAction
+  | IProcessGatsbyImageSourceUrlAction
+  | IClearGatsbyImageSourceUrlAction
 
 export interface ISetComponentFeatures {
   type: `SET_COMPONENT_FEATURES`
@@ -999,11 +1002,27 @@ export interface ISetDomainRequestHeaders {
   }
 }
 
+export interface IProcessGatsbyImageSourceUrlAction {
+  type: `PROCESS_GATSBY_IMAGE_SOURCE_URL`
+  payload: {
+    sourceUrl: string
+  }
+}
+
+export interface IClearGatsbyImageSourceUrlAction {
+  type: `CLEAR_GATSBY_IMAGE_SOURCE_URL`
+}
+
+export interface ITelemetry {
+  gatsbyImageSourceUrls: Set<string>
+}
+
 export interface IMergeWorkerQueryState {
   type: `MERGE_WORKER_QUERY_STATE`
   payload: {
     workerId: number
     queryStateChunk: IGatsbyState["queries"]
+    queryStateTelemetryChunk: IGatsbyState["telemetry"]
   }
 }
 
