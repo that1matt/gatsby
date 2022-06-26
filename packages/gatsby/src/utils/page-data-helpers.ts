@@ -1,3 +1,4 @@
+import reporter from "gatsby-cli/lib/reporter"
 import type { IStructuredError } from "gatsby-cli/src/structured-errors/types"
 import { IGatsbyPage, IGatsbyState } from "../redux/types"
 
@@ -32,6 +33,8 @@ export function constructPageDataString(
 
   const formattedFragments = {}
 
+  // TODO: get this to work when there is no default fragment
+  // and all fragments are specialized (i.e. about author fragments won't have a default)
   if (fragments) {
     for (const fragment of fragments.values()) {
       let concreteFragmentForFragmentSlot = fragment.name
@@ -43,7 +46,8 @@ export function constructPageDataString(
             `Could not find fragment "${overrideFragments[fragment.name]}". ` +
             `Please check your createPages in your gatsby-node to verify this ` +
             `is the correct name.`
-          throw new Error(message)
+
+          reporter.panicOnBuild(new Error(message))
         }
 
         const overrideComponent = fragments.get(
