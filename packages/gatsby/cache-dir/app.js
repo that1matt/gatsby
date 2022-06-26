@@ -94,15 +94,33 @@ apiRunnerAsync(`onClientEntry`).then(() => {
             !isRestarting &&
             msg.type === `LOG_ACTION` &&
             msg.action.type === `DEVELOP` &&
-            msg.action.payload === `RESTART_REQUIRED` &&
-            window.confirm(
-              `The develop process needs to be restarted for the changes to ${msg.action.dirtyFile} to be applied.\nDo you want to restart the develop process now?`
-            )
+            msg.action.payload === `RESTART_REQUIRED`
           ) {
-            isRestarting = true
-            parentSocket.emit(`develop:restart`, () => {
-              window.location.reload()
-            })
+            if (msg.action.dirtyFile.startsWith(`gatsby-node`)) {
+              if (
+                window.confirm(
+                  `${msg.action.dirtyFile} was edited.\nShould we rerun "createPages"?`
+                )
+              ) {
+                fetch(`/__create-pages`)
+              }
+            } else {
+              if (
+                window.confirm(
+                  `The develop process needs to be restarted for the changes to ${msg.action.dirtyFile} to be applied.\nDo you want to restart the develop process now?`
+                )
+              ) {
+                isRestarting = true
+                parentSocket.emit(`develop:restart`, () => {
+                  window.location.reload()
+                })
+              }
+            }
+
+            // isRestarting = true
+            // parentSocket.emit(`develop:restart`, () => {
+            //   window.location.reload()
+            // })
           }
 
           if (

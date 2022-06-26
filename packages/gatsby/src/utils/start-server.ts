@@ -256,6 +256,12 @@ export async function startServer(
     })
   }
 
+  app.use(`/__create-pages`, (req, res) => {
+    console.log(`USE RERUN_CREATE_PAGES`)
+    emitter.emit(`RERUN_CREATE_PAGES`)
+    res.send(`OK`)
+  })
+
   app.post(`${REFRESH_ENDPOINT}/:plugin_name?`, express.json(), (req, res) => {
     const pluginName = req.params[`plugin_name`]
 
