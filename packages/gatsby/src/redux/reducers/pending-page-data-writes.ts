@@ -8,7 +8,7 @@ export const pendingPageDataWritesReducer = (
 ): IGatsbyState["pendingPageDataWrites"] => {
   switch (action.type) {
     case `CREATE_PAGE`:
-      if (action.componentModified) {
+      if (action.componentModified || action.fragmentsModified) {
         state.pagePaths.add(action.payload.path)
       }
 

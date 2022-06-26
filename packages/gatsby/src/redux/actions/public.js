@@ -435,6 +435,8 @@ ${reservedFields.map(f => `  * "${f}"`).join(`\n`)}
     !!oldPage && !_.isEqual(oldPage.context, internalPage.context)
   const componentModified =
     !!oldPage && !_.isEqual(oldPage.component, internalPage.component)
+  const fragmentsModified =
+    !!oldPage && !_.isEqual(oldPage.fragments, internalPage.fragments)
 
   const alternateSlashPath = page.path.endsWith(`/`)
     ? page.path.slice(0, -1)
@@ -503,6 +505,7 @@ ${reservedFields.map(f => `  * "${f}"`).join(`\n`)}
       type: `CREATE_PAGE`,
       contextModified,
       componentModified,
+      fragmentsModified,
       plugin,
       payload: internalPage,
     },

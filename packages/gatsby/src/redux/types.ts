@@ -740,6 +740,7 @@ export interface ICreatePageAction {
   plugin?: IGatsbyPlugin
   contextModified?: boolean
   componentModified?: boolean
+  fragmentsModified?: boolean
 }
 
 export interface ICreateFragmentAction {
