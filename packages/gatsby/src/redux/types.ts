@@ -748,6 +748,12 @@ export interface ICreateFragmentAction {
   plugin?: IGatsbyPlugin
 }
 
+export interface ISetFragmentsRenderResultsAction {
+  type: `SET_FRAGMENTS_RENDER_RESULTS`
+  payload: IRenderFragmentsResults
+  plugin?: IGatsbyPlugin
+}
+
 export interface ICreateRedirectAction {
   type: `CREATE_REDIRECT`
   payload: IRedirect
