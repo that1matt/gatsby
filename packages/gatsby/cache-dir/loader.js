@@ -338,6 +338,7 @@ export class BaseLoader {
             windowPageFragments.set(fragment.name, {
               component,
               layoutContext: fragment.result.layoutContext,
+              data: fragment.result.data,
             })
           }
 

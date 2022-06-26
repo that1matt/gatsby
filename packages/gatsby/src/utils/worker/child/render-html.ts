@@ -11,7 +11,11 @@ import {
   getScriptsAndStylesForTemplate,
   clearCache as clearAssetsMappingCache,
 } from "../../client-assets-for-template"
-import { IPageDataWithQueryResult, readPageData } from "../../page-data"
+import {
+  IPageDataWithQueryResult,
+  readPageData,
+  readFragmentData,
+} from "../../page-data"
 import type { IRenderHtmlResult } from "../../../commands/build-html"
 import {
   clearStaticQueryCaches,
@@ -296,12 +300,18 @@ export async function renderFragments({
       fragment.componentChunkName
     )
 
+    const fragmentData = await readFragmentData(publicDir, fragment.name)
+    const html = await htmlComponentRenderer.renderFragment({
+      fragment,
+      staticQueryContext,
+      props: {
+        data: fragmentData?.result?.data,
+      },
+    })
+
     await fs.outputFile(
-      path.join(publicDir, `_gatsby`, `fragments`, `${fileName}.html`),
-      await htmlComponentRenderer.renderFragment({
-        fragment,
-        staticQueryContext,
-      })
+      path.join(publicDir, `_gatsby`, `fragments`, `${fileName}-${index}.html`),
+      html
     )
   }
 }

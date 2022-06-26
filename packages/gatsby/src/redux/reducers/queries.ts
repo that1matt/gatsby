@@ -80,6 +80,19 @@ export function queriesReducer(
       state.deletedQueries.delete(path)
       return state
     }
+    case `CREATE_FRAGMENT`: {
+      const { name, componentPath } = action.payload
+      const path = `fr--${name}`
+      let query = state.trackedQueries.get(path)
+
+      query = registerQuery(state, path)
+      query.dirty = setFlag(query.dirty, FLAG_DIRTY_NEW_PAGE)
+      state = trackDirtyQuery(state, path)
+
+      registerComponent(state, componentPath).pages.add(path)
+      state.deletedQueries.delete(path)
+      return state
+    }
     case `DELETE_PAGE`: {
       // Don't actually remove the page query from trackedQueries, just mark it as "deleted". Why?
       //   We promote a technique of a consecutive deletePage/createPage calls in onCreatePage hook,

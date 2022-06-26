@@ -11,7 +11,12 @@ const PageFragment = ({ name }) => {
     )
   } else {
     const fragment = window.pageFragments.get(fragmentsMap[name])
-    return <fragment.component layoutContext={fragment.layoutContext} />
+    return (
+      <fragment.component
+        layoutContext={fragment.layoutContext}
+        data={fragment.data}
+      />
+    )
   }
 }
 

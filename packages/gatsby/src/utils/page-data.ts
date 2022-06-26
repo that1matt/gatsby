@@ -148,17 +148,31 @@ export async function writeFragmentData(
   { componentChunkName, context, name }: IGatsbyPageFragment,
   staticQueryHashes: Array<string>
 ): Promise<string> {
+  const result = JSON.parse(
+    (await readPageQueryResult(publicDir, `fr--${name}`)).toString()
+  )
+
   const outputFilePath = path.join(publicDir, `fragment-data`, `${name}.json`)
 
   const body = JSON.stringify({
     componentChunkName,
     result: {
+      data: result.data,
       layoutContext: context,
     },
     staticQueryHashes,
   })
   await fs.outputFile(outputFilePath, body)
   return body
+}
+
+export async function readFragmentData(
+  publicDir: string,
+  fragmentName: string
+): Promise<IPageDataWithQueryResult> {
+  const filePath = path.join(publicDir, `fragment-data`, `${fragmentName}.json`)
+  const rawPageData = await fs.readFile(filePath, `utf-8`)
+  return JSON.parse(rawPageData)
 }
 
 let isFlushPending = false

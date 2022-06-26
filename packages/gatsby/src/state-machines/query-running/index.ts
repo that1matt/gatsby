@@ -93,6 +93,15 @@ export const queryStates: MachineConfig<IQueryRunningContext, any, any> = {
         src: `runPageQueries`,
         id: `running-page-queries`,
         onDone: {
+          target: `runningFragmentQueries`,
+        },
+      },
+    },
+    runningFragmentQueries: {
+      invoke: {
+        src: `runFragmentQueries`,
+        id: `running-fragment-queries`,
+        onDone: {
           target: `waitingForJobs`,
           actions: `flushPageData`,
         },

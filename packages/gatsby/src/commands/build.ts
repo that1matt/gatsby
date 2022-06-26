@@ -37,6 +37,7 @@ import {
   calculateDirtyQueries,
   runStaticQueries,
   runPageQueries,
+  runFragmentQueries,
   writeOutRequires,
 } from "../services"
 import {
@@ -299,6 +300,7 @@ module.exports = async function build(
   const waitMaterializePageMode = materializePageMode()
 
   let waitForWorkerPoolRestart = Promise.resolve()
+
   if (process.env.GATSBY_EXPERIMENTAL_PARALLEL_QUERY_RUNNING) {
     await runQueriesInWorkersQueue(workerPool, queryIds, {
       parentSpan: buildSpan,
@@ -326,6 +328,13 @@ module.exports = async function build(
       store,
     })
   }
+
+  await runFragmentQueries({
+    queryIds,
+    graphqlRunner,
+    parentSpan: buildSpan,
+    store,
+  })
 
   // create scope so we don't leak state object
   {

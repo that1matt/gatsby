@@ -419,13 +419,17 @@ export function getPageChunk({ componentChunkName }) {
   return asyncRequires.components[componentChunkName]()
 }
 
-export async function renderFragment({ fragment, staticQueryContext }) {
+export async function renderFragment({
+  fragment,
+  staticQueryContext,
+  props = {},
+}) {
   const { default: FragmentComponent } = await getPageChunk(fragment)
   const writableStream = new WritableAsPromise()
 
   const { pipe } = renderToPipeableStream(
     <StaticQueryContext.Provider value={staticQueryContext}>
-      <FragmentComponent layoutContext={fragment.context} />
+      <FragmentComponent layoutContext={fragment.context} {...props} />
     </StaticQueryContext.Provider>,
     {
       onAllReady() {
