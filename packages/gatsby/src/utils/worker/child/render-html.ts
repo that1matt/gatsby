@@ -139,12 +139,14 @@ export const renderHTMLProd = async ({
   envVars,
   sessionId,
   webpackCompilationHash,
+  fragmentsRenderResults,
 }: {
   htmlComponentRendererPath: string
   paths: Array<string>
   envVars: Array<[string, string | undefined]>
   sessionId: number
   webpackCompilationHash: string
+  fragmentsRenderResults: Record<string, IRenderFragmentResult>
 }): Promise<IRenderHtmlResult> => {
   const publicDir = join(process.cwd(), `public`)
   const isPreview = process.env.GATSBY_IS_PREVIEW === `true`
@@ -185,6 +187,7 @@ export const renderHTMLProd = async ({
             pagePath,
             pageData,
             webpackCompilationHash,
+            fragmentsRenderResults,
             ...resourcesForTemplate,
           })
 
@@ -284,6 +287,14 @@ export const renderHTMLDev = async ({
   )
 }
 
+export interface IRenderFragmentResult {
+  chunks: 2 | 1
+}
+
+export interface IRenderFragmentsResults {
+  [fragmentName: string]: IRenderFragmentResult
+}
+
 export async function renderFragments({
   fragments,
   htmlComponentRendererPath,
@@ -292,26 +303,54 @@ export async function renderFragments({
   publicDir: string
   fragments: Array<[string, IGatsbyPageFragment]>
   htmlComponentRendererPath: string
-}): Promise<void> {
+}): Promise<IRenderFragmentsResults> {
   const htmlComponentRenderer = require(htmlComponentRendererPath)
+
+  const results: IRenderFragmentsResults = {}
 
   for (const [fileName, fragment] of fragments) {
     const staticQueryContext = await readStaticQueryContext(
       fragment.componentChunkName
     )
 
+    const MAGIC_CHILDREN_STRING = `__DO_NOT_USE_OR_ELSE__`
     const fragmentData = await readFragmentData(publicDir, fragment.name)
     const html = await htmlComponentRenderer.renderFragment({
       fragment,
       staticQueryContext,
       props: {
         data: fragmentData?.result?.data,
+        children: MAGIC_CHILDREN_STRING,
       },
     })
+    const split = html.split(MAGIC_CHILDREN_STRING)
 
-    await fs.outputFile(
-      path.join(publicDir, `_gatsby`, `fragments`, `${fileName}-${index}.html`),
-      html
-    )
+    const result: IRenderFragmentResult = {
+      chunks: 1,
+    }
+
+    if (split.length === 2) {
+      result.chunks = 2
+    } else if (split.length !== 1) {
+      throw new Error(`Too many children in fragment ${fileName}`)
+    }
+
+    let index = 1
+    for (const htmlChunk of split) {
+      await fs.outputFile(
+        path.join(
+          publicDir,
+          `_gatsby`,
+          `fragments`,
+          `${fileName}-${index}.html`
+        ),
+        htmlChunk
+      )
+      index++
+    }
+
+    results[fragment.name] = result
   }
+
+  return results
 }

@@ -21,6 +21,7 @@ import { PackageJson } from "../.."
 import { IPageDataWithQueryResult } from "../utils/page-data"
 
 import type { GatsbyWorkerPool } from "../utils/worker/pool"
+import { IRenderFragmentResult } from "../utils/worker/child/render-html"
 type IActivity = any // TODO
 
 const isPreview = process.env.GATSBY_IS_PREVIEW === `true`
@@ -198,7 +199,7 @@ const renderHTMLQueue = async (
 
   const sessionId = Date.now()
 
-  const { webpackCompilationHash } = store.getState()
+  const { webpackCompilationHash, fragments } = store.getState()
 
   const renderHTML =
     stage === `build-html`
@@ -206,6 +207,16 @@ const renderHTMLQueue = async (
       : workerPool.single.renderHTMLDev
 
   const uniqueUnsafeBuiltinUsedStacks = new Set<string>()
+
+  const fragmentsRenderResults: Record<string, IRenderFragmentResult> = {}
+  if (stage === `build-html`) {
+    for (const [fragmentName, fragmentRenderResult] of fragments) {
+      if (!fragmentRenderResult.renderResults) {
+        throw new Error(`Render results not set for "${fragmentName}"`)
+      }
+      fragmentsRenderResults[fragmentName] = fragmentRenderResult.renderResults
+    }
+  }
 
   try {
     await Bluebird.map(segments, async pageSegment => {
@@ -215,6 +226,7 @@ const renderHTMLQueue = async (
         paths: pageSegment,
         sessionId,
         webpackCompilationHash,
+        fragmentsRenderResults,
       })
 
       if (isPreview) {
@@ -436,6 +448,12 @@ export async function buildHTMLPagesAndDeleteStaleArtifacts({
     payload: toCleanupFromTrackedState,
   })
 
+  await buildFragments({
+    program,
+    workerPool,
+    parentSpan,
+  })
+
   if (toRegenerate.length > 0) {
     const buildHTMLActivityProgress = reporter.createProgress(
       `Building static HTML for pages`,
@@ -479,12 +497,6 @@ export async function buildHTMLPagesAndDeleteStaleArtifacts({
   } else {
     reporter.info(`There are no new or changed html files to build.`)
   }
-
-  await buildFragments({
-    program,
-    workerPool,
-    parentSpan,
-  })
 
   if (_CFLAGS_.GATSBY_MAJOR !== `4` && !program.keepPageRenderer) {
     try {
@@ -533,10 +545,15 @@ export async function buildFragments({
         .map(([name]) => ` - "${name}"`)
         .join(`\n`)}`
     )
-    await workerPool.single.renderFragments({
+    const fragmentsRenderResults = await workerPool.single.renderFragments({
       publicDir: path.join(program.directory, `public`),
       htmlComponentRendererPath,
       fragments,
+    })
+
+    store.dispatch({
+      type: `SET_FRAGMENTS_RENDER_RESULTS`,
+      payload: fragmentsRenderResults,
     })
   } catch (e) {
     buildHTMLActivityProgress.panic(e)

@@ -14,6 +14,7 @@ const { WritableAsPromise } = require(`./server-utils/writable-as-promise`)
 
 const { RouteAnnouncerProps } = require(`./route-announcer-props`)
 const { apiRunner, apiRunnerAsync } = require(`./api-runner-ssr`)
+const { FragmentsRenderResultsContext } = require(`./page-fragment`)
 const asyncRequires = require(`$virtual/async-requires`)
 const { version: gatsbyVersion } = require(`gatsby/package.json`)
 const { grabMatchParams } = require(`./find-path`)
@@ -107,6 +108,7 @@ export default async function staticPage({
   reversedStyles,
   reversedScripts,
   inlinePageData = false,
+  fragmentsRenderResults,
 }) {
   // for this to work we need this function to be sync or at least ensure there is single execution of it at a time
   global.unsafeBuiltinUsage = []
@@ -242,16 +244,18 @@ export default async function staticPage({
 
     const bodyComponent = (
       <StaticQueryContext.Provider value={staticQueryContext}>
-        <FragmentsMapContext.Provider value={fragmentsMap}>
-          {apiRunner(
-            `wrapRootElement`,
-            { element: routerElement, pathname: pagePath },
-            routerElement,
-            ({ result }) => {
-              return { element: result, pathname: pagePath }
-            }
-          ).pop()}
-        </FragmentsMapContext.Provider>
+        <FragmentsRenderResultsContext.Provider value={fragmentsRenderResults}>
+          <FragmentsMapContext.Provider value={fragmentsMap}>
+            {apiRunner(
+              `wrapRootElement`,
+              { element: routerElement, pathname: pagePath },
+              routerElement,
+              ({ result }) => {
+                return { element: result, pathname: pagePath }
+              }
+            ).pop()}
+          </FragmentsMapContext.Provider>
+        </FragmentsRenderResultsContext.Provider>
       </StaticQueryContext.Provider>
     )
 
@@ -435,7 +439,9 @@ export async function renderFragment({
       onAllReady() {
         pipe(writableStream)
       },
-      onError() {},
+      onError(e) {
+        console.error(e)
+      },
     }
   )
 

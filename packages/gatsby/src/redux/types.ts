@@ -13,6 +13,10 @@ import { ThunkAction } from "redux-thunk"
 import { InternalJob, JobResultInterface } from "../utils/jobs/manager"
 import { ITypeMetadata } from "../schema/infer/inference-metadata"
 import { Span } from "opentracing"
+import {
+  IRenderFragmentResult,
+  IRenderFragmentsResults,
+} from "../utils/worker/child/render-html"
 
 type SystemPath = string
 type Identifier = string
@@ -67,6 +71,7 @@ export interface IGatsbyPageFragment {
   componentChunkName: string
   context: Record<string, unknown>
   name: string
+  renderResults?: IRenderFragmentResult
 }
 
 export interface IGatsbyFunction {
@@ -455,6 +460,7 @@ export type ActionsUnion =
   | IClearJobV2Context
   | ISetDomainRequestHeaders
   | ICreateFragmentAction
+  | ISetFragmentsRenderResultsAction
   | ISetSSRTemplateWebpackCompilationHashAction
   | IProcessGatsbyImageSourceUrlAction
   | IClearGatsbyImageSourceUrlAction

@@ -12,7 +12,7 @@ import Link, {
 import { useScrollRestoration } from "gatsby-react-router-scroll"
 import PageRenderer from "./public-page-renderer"
 import loader from "./loader"
-import PageFragment from "./page-fragment"
+import { PageFragment } from "./page-fragment"
 
 const prefetchPathname = loader.enqueue
 
