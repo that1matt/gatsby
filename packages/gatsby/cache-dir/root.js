@@ -1,6 +1,7 @@
 import React from "react"
 import { Router, Location, BaseContext } from "@gatsbyjs/reach-router"
 import { ScrollContext } from "gatsby-react-router-scroll"
+import { FragmentsMapContext } from "gatsby"
 
 import { shouldUpdateScroll, RouteUpdates } from "./navigation"
 import { apiRunner } from "./api-runner-browser"
@@ -36,29 +37,34 @@ class LocationHandler extends React.Component {
       return (
         <EnsureResources location={location}>
           {locationAndPageResources => (
-            <RouteUpdates location={location}>
-              <ScrollContext
-                location={location}
-                shouldUpdateScroll={shouldUpdateScroll}
-              >
-                <Router
-                  basepath={__BASE_PATH__}
+            <FragmentsMapContext.Provider
+              value={locationAndPageResources.pageResources.page.fragmentsMap}
+            >
+              <RouteUpdates location={location}>
+                <ScrollContext
                   location={location}
-                  id="gatsby-focus-wrapper"
+                  shouldUpdateScroll={shouldUpdateScroll}
                 >
-                  <RouteHandler
-                    path={encodeURI(
-                      (
-                        locationAndPageResources.pageResources.page.matchPath ||
-                        locationAndPageResources.pageResources.page.path
-                      ).split(`?`)[0]
-                    )}
-                    {...this.props}
-                    {...locationAndPageResources}
-                  />
-                </Router>
-              </ScrollContext>
-            </RouteUpdates>
+                  <Router
+                    basepath={__BASE_PATH__}
+                    location={location}
+                    id="gatsby-focus-wrapper"
+                  >
+                    <RouteHandler
+                      path={encodeURI(
+                        (
+                          locationAndPageResources.pageResources.page
+                            .matchPath ||
+                          locationAndPageResources.pageResources.page.path
+                        ).split(`?`)[0]
+                      )}
+                      {...this.props}
+                      {...locationAndPageResources}
+                    />
+                  </Router>
+                </ScrollContext>
+              </RouteUpdates>
+            </FragmentsMapContext.Provider>
           )}
         </EnsureResources>
       )
