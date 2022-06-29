@@ -158,12 +158,18 @@ export function htmlReducer(
         state.templateCompilationHashes[action.payload.templatePath] =
           action.payload.templateHash
 
-        action.payload.pages.forEach(pagePath => {
-          const htmlFile = state.trackedHtmlFiles.get(pagePath)
-          if (htmlFile) {
-            htmlFile.dirty |= FLAG_DIRTY_SSR_COMPILATION_HASH
-          }
-        })
+        if (action.payload.pages) {
+          action.payload.pages.forEach(pagePath => {
+            const htmlFile = state.trackedHtmlFiles.get(pagePath)
+            if (htmlFile) {
+              htmlFile.dirty |= FLAG_DIRTY_SSR_COMPILATION_HASH
+            }
+          })
+        } else {
+          process.stdout.write(
+            `---no pages for:\n${JSON.stringify(action.payload, null, 2)}\n`
+          )
+        }
       }
 
       return state
