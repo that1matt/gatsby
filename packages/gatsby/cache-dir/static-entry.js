@@ -367,15 +367,21 @@ export default async function staticPage({
     )
 
     postBodyComponents.push(
-      <esi:include src="/_gatsby/fragments/chunk-map.html" />
+      createElement(`esi:include`, {
+        src: `/_gatsby/fragments/chunk-map.html`,
+      })
     )
 
     postBodyComponents.push(
-      <esi:include src="/_gatsby/fragments/assets.html" />
+      createElement(`esi:include`, {
+        src: `/_gatsby/fragments/assets.html`,
+      })
     )
 
     postBodyComponents.push(
-      <esi:include src="/_gatsby/fragments/webpack-hash.html" />
+      createElement(`esi:include`, {
+        src: `/_gatsby/fragments/webpack-hash.html`,
+      })
     )
 
     // Reorder headComponents so meta tags are always at the top and aren't missed by crawlers
@@ -429,21 +435,26 @@ export async function renderFragment({
   props = {},
 }) {
   const { default: FragmentComponent } = await getPageChunk(fragment)
-  const writableStream = new WritableAsPromise()
 
-  const { pipe } = renderToPipeableStream(
+  const fragmentElement = (
     <StaticQueryContext.Provider value={staticQueryContext}>
       <FragmentComponent layoutContext={fragment.context} {...props} />
-    </StaticQueryContext.Provider>,
-    {
+    </StaticQueryContext.Provider>
+  )
+
+  if (HAS_REACT_18) {
+    const writableStream = new WritableAsPromise()
+    const { pipe } = renderToPipeableStream(fragmentElement, {
       onAllReady() {
         pipe(writableStream)
       },
       onError(e) {
         console.error(e)
       },
-    }
-  )
+    })
 
-  return await writableStream
+    return await writableStream
+  } else {
+    return renderToString(fragmentElement)
+  }
 }

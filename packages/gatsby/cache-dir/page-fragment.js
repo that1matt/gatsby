@@ -14,21 +14,19 @@ const PageFragment = ({ name, children }) => {
     if (fragmentRenderResult.chunks === 2) {
       return (
         <>
-          <esi:include
-            src={`/_gatsby/fragments/${fragmentsMap[name]}_1.html`}
-          ></esi:include>
+          {React.createElement(`esi:include`, {
+            src: `/_gatsby/fragments/${fragmentsMap[name]}_1.html`,
+          })}
           {children}
-          <esi:include
-            src={`/_gatsby/fragments/${fragmentsMap[name]}_2.html`}
-          ></esi:include>
+          {React.createElement(`esi:include`, {
+            src: `/_gatsby/fragments/${fragmentsMap[name]}_2.html`,
+          })}
         </>
       )
     } else {
-      return (
-        <esi:include
-          src={`/_gatsby/fragments/${fragmentsMap[name]}_1.html`}
-        ></esi:include>
-      )
+      return React.createElement(`esi:include`, {
+        src: `/_gatsby/fragments/${fragmentsMap[name]}_1.html`,
+      })
     }
   } else {
     const fragment = window.pageFragments.get(fragmentsMap[name])
