@@ -15,17 +15,17 @@ const PageFragment = ({ name, children }) => {
       return (
         <>
           {React.createElement(`esi:include`, {
-            src: `/_gatsby/fragments/${fragmentsMap[name]}_1.html`,
+            src: `/_gatsby/fragments/${fragmentsMap[name]}-1.html`,
           })}
           {children}
           {React.createElement(`esi:include`, {
-            src: `/_gatsby/fragments/${fragmentsMap[name]}_2.html`,
+            src: `/_gatsby/fragments/${fragmentsMap[name]}-2.html`,
           })}
         </>
       )
     } else {
       return React.createElement(`esi:include`, {
-        src: `/_gatsby/fragments/${fragmentsMap[name]}_1.html`,
+        src: `/_gatsby/fragments/${fragmentsMap[name]}-1.html`,
       })
     }
   } else {
