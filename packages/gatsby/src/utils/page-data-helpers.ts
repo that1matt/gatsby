@@ -9,7 +9,7 @@ export interface IPageData {
   staticQueryHashes: Array<string>
   getServerDataError?: IStructuredError | Array<IStructuredError> | null
   manifestId?: string
-  fragments: IGatsbyPage["fragments"]
+  fragments?: IGatsbyPage["fragments"]
 }
 
 export function constructPageDataString(
@@ -22,7 +22,7 @@ export function constructPageDataString(
     fragments: overrideFragments,
   }: IPageData,
   result: string | Buffer,
-  fragments: IGatsbyState["fragments"]
+  fragments?: IGatsbyState["fragments"]
 ): string {
   let body =
     `{` +
@@ -39,7 +39,7 @@ export function constructPageDataString(
     for (const fragment of fragments.values()) {
       let concreteFragmentForFragmentSlot = fragment.name
 
-      if (overrideFragments[fragment.name]) {
+      if (overrideFragments && overrideFragments[fragment.name]) {
         if (!fragments.has(overrideFragments[fragment.name])) {
           // TODO throw the right kind of error
           const message =

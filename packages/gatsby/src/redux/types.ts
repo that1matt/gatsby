@@ -747,6 +747,7 @@ export interface ICreateFragmentAction {
   type: `CREATE_FRAGMENT`
   payload: IGatsbyPageFragment
   plugin?: IGatsbyPlugin
+  traceId: string | undefined
 }
 
 export interface ISetFragmentsRenderResultsAction {

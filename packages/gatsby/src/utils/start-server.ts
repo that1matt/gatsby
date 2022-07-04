@@ -257,13 +257,13 @@ export async function startServer(
     })
   }
 
-  app.use(`/__create-pages`, (req, res) => {
+  app.use(`/__create-pages`, (_req, res) => {
     console.log(`USE RERUN_CREATE_PAGES`)
     emitter.emit(`RERUN_CREATE_PAGES`)
     res.send(`OK`)
   })
 
-  app.use(`/__reload-gatsby-node`, (req, res) => {
+  app.use(`/__reload-gatsby-node`, (_req, res) => {
     console.log(`reload default-site-plugin gatsby-node`)
 
     const { flattenedPlugins } = store.getState()

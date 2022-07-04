@@ -15,6 +15,7 @@ const initialState: IStateProgram = {
   extensions: [],
   browserslist: [],
   report: reporter,
+  prefixPaths: false,
 }
 
 export const programReducer = (

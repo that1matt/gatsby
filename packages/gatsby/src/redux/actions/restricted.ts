@@ -19,6 +19,7 @@ import {
   IPrintTypeDefinitions,
   ICreateResolverContext,
   IGatsbyPluginContext,
+  ICreateFragmentAction,
 } from "../types"
 import { generateComponentChunkName } from "../../utils/js-chunk-names"
 import normalizePath from "normalize-path"
@@ -432,7 +433,7 @@ export const actions = {
     },
     plugin: IGatsbyPlugin,
     traceId?: string
-  ) => {
+  ): ICreateFragmentAction => {
     return {
       type: `CREATE_FRAGMENT`,
       plugin,

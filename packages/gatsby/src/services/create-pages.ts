@@ -8,7 +8,6 @@ import { deleteUntouchedPages, findChangedPages } from "../utils/changed-pages"
 import { getDataStore } from "../datastore"
 import {
   setGatsbyPluginCache,
-  pluginModuleCache,
   requireGatsbyPlugin,
 } from "../utils/require-gatsby-plugin"
 

@@ -8,7 +8,6 @@ import {
   buildRenderer,
   buildHTMLPagesAndDeleteStaleArtifacts,
   IBuildArgs,
-  buildFragments,
 } from "./build-html"
 import { buildProductionBundle } from "./build-javascript"
 import { bootstrap } from "../bootstrap"
