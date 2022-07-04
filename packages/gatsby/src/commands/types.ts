@@ -32,6 +32,7 @@ export interface IProgram {
   inspectBrk?: number
   graphqlTracing?: boolean
   verbose?: boolean
+  prefixPaths: boolean
   setStore?: (store: Store<IGatsbyState, AnyAction>) => void
 }
 

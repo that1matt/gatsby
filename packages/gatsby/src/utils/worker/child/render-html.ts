@@ -23,6 +23,7 @@ import {
   getStaticQueryContext,
 } from "../../static-query-utils"
 import { IGatsbyPageFragment } from "../../../internal"
+import { ensureFileContent } from "../../ensure-file-content"
 // we want to force posix-style joins, so Windows doesn't produce backslashes for urls
 const { join } = path.posix
 
@@ -337,7 +338,7 @@ export async function renderFragments({
 
     let index = 1
     for (const htmlChunk of split) {
-      await fs.outputFile(
+      await ensureFileContent(
         path.join(
           publicDir,
           `_gatsby`,

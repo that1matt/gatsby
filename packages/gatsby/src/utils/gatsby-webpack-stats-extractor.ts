@@ -1,11 +1,15 @@
 import fs from "fs-extra"
 import path from "path"
 import { Compiler } from "webpack"
+import { ensureFileContent } from "./ensure-file-content"
 
 export class GatsbyWebpackStatsExtractor {
   private plugin: { name: string }
-  constructor() {
+  private publicPath: string
+
+  constructor(publicPath: string) {
     this.plugin = { name: `GatsbyWebpackStatsExtractor` }
+    this.publicPath = publicPath
   }
   apply(compiler: Compiler): void {
     let previousChunkMapJson: string | undefined
@@ -79,14 +83,14 @@ export class GatsbyWebpackStatsExtractor {
 
         await fs.ensureDir(path.join(`public`, `_gatsby`, `fragments`))
 
-        await fs.writeFile(
+        await ensureFileContent(
           path.join(`public`, `_gatsby`, `fragments`, `chunk-map.html`),
           chunkEsiContents
         )
 
         const hashEsiContents = `<script>window.___webpackCompilationHash="${stats.hash}";</script>`
 
-        await fs.writeFile(
+        await ensureFileContent(
           path.join(`public`, `_gatsby`, `fragments`, `webpack-hash.html`),
           hashEsiContents
         )
@@ -98,11 +102,13 @@ export class GatsbyWebpackStatsExtractor {
           ...assets[`app`],
         ])) {
           if (asset.endsWith(`.js`)) {
-            assetEsiContents.push(`<script src="${asset}" async></script>`)
+            assetEsiContents.push(
+              `<script src="${this.publicPath}/${asset}" async></script>`
+            )
           }
         }
 
-        await fs.writeFile(
+        await ensureFileContent(
           path.join(`public`, `_gatsby`, `fragments`, `assets.html`),
           assetEsiContents.join(``)
         )
