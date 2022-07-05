@@ -71,7 +71,7 @@ const toPageResources = (pageData, component = null) => {
     matchPath: pageData.matchPath,
     staticQueryHashes: pageData.staticQueryHashes,
     getServerDataError: pageData.getServerDataError,
-    fragmentsMap: pageData.fragmentsMap,
+    fragmentsMap: pageData.fragmentsMap ?? {},
   }
 
   return {
@@ -278,7 +278,7 @@ export class BaseLoader {
       const {
         componentChunkName,
         staticQueryHashes: pageStaticQueryHashes = [],
-        fragmentsMap,
+        fragmentsMap = {},
       } = pageData
 
       //     "fragmentsMap": {

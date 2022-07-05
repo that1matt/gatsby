@@ -16,6 +16,7 @@ const {
   ExportIsNotAsyncError,
   isWithinConfigExport,
 } = require(`babel-plugin-remove-graphql-queries`)
+import { collectFragments } from "../utils/babel/find-page-fragments"
 
 const report = require(`gatsby-cli/lib/reporter`)
 
@@ -476,7 +477,7 @@ export default class FileParser {
   async parseFile(
     file: string,
     addError
-  ): Promise<?Array<GraphQLDocumentInFile>> {
+  ): Promise<{ astDefinitions: ?Array<GraphQLDocumentInFile> }> {
     let text
     try {
       text = await fs.readFile(file, `utf8`)
@@ -504,7 +505,8 @@ export default class FileParser {
       !text.includes(`graphql`) &&
       !text.includes(`gatsby-plugin-image`) &&
       !text.includes(`getServerData`) &&
-      !text.includes(`config`)
+      !text.includes(`config`) &&
+      !text.includes(`PageFragment`)
     ) {
       return null
     }
@@ -516,21 +518,24 @@ export default class FileParser {
       .digest(`hex`)
 
     try {
-      if (!cache[hash]) {
+      let results = cache[hash]
+      if (!results) {
         const ast = await parseToAst(file, text, {
           parentSpan: this.parentSpan,
           addError,
         })
-        cache[hash] = {
+
+        results = cache[hash] = {
           astDefinitions: await findGraphQLTags(file, ast, {
             parentSpan: this.parentSpan,
             addError,
           }),
           serverData: findApiExport(ast, `getServerData`),
           config: findApiExport(ast, `config`),
+          pageFragments: collectFragments(ast, file),
         }
       }
-      const { astDefinitions, serverData, config } = cache[hash]
+      const { astDefinitions, serverData, config, pageFragments } = results
 
       // Note: we should dispatch this action even when getServerData is not found
       // (maybe it was set before, so now we need to reset renderMode from SSR to the default one)
@@ -554,7 +559,7 @@ export default class FileParser {
         )
       }
 
-      return astDefinitions
+      return { astDefinitions, pageFragments }
     } catch (err) {
       // default error
       let structuredError = {
@@ -654,13 +659,27 @@ export default class FileParser {
     addError
   ): Promise<Array<GraphQLDocumentInFile>> {
     const documents = []
+    const pageFragmentUsage = new Map()
 
     return Promise.all(
       files.map(file =>
-        this.parseFile(file, addError).then(docs => {
-          documents.push(...(docs || []))
+        this.parseFile(file, addError).then(results => {
+          if (results) {
+            const { astDefinitions, pageFragments } = results
+            documents.push(...(astDefinitions || []))
+            if (pageFragments) {
+              pageFragmentUsage.set(file, pageFragments)
+            }
+          }
         })
       )
-    ).then(() => documents)
+    ).then(() => {
+      store.dispatch({
+        type: `SET_COMPONENTS_USING_PAGE_FRAGMENTS`,
+        payload: pageFragmentUsage,
+      })
+
+      return documents
+    })
   }
 }

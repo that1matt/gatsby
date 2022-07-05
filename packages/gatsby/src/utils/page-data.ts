@@ -22,7 +22,7 @@ export { reverseFixedPagePath }
 import { processNodeManifests } from "../utils/node-manifest"
 import { IExecutionResult } from "../query/types"
 import { getPageMode } from "./page-mode"
-import { IGatsbyState } from "../internal"
+import { ICollectedFragments } from "./babel/find-page-fragments"
 
 export interface IPageDataWithQueryResult extends IPageData {
   result: IExecutionResult
@@ -118,13 +118,17 @@ export async function readPageQueryResult(
 export async function writePageData(
   publicDir: string,
   pageData: IPageData,
-  fragments: IGatsbyState["fragments"]
+  fragmentsUsedByTemplate: ICollectedFragments
 ): Promise<string> {
   const result = await readPageQueryResult(publicDir, pageData.path)
 
   const outputFilePath = generatePageDataPath(publicDir, pageData.path)
 
-  const body = constructPageDataString(pageData, result, fragments)
+  const body = constructPageDataString(
+    pageData,
+    result,
+    fragmentsUsedByTemplate
+  )
 
   // transform asset size to kB (from bytes) to fit 64 bit to numbers
   const pageDataSize = Buffer.byteLength(body) / 1000
@@ -197,6 +201,7 @@ export async function flush(parentSpan?: Span): Promise<void> {
     staticQueriesByTemplate,
     queries,
     fragments,
+    fragmentsByTemplate,
   } = store.getState()
   const isBuild = program?._?.[0] !== `develop`
 
@@ -270,7 +275,7 @@ export async function flush(parentSpan?: Span): Promise<void> {
             ...page,
             staticQueryHashes,
           },
-          fragments
+          fragmentsByTemplate.get(page.componentPath) ?? {}
         )
 
         writePageDataActivity.tick()

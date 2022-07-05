@@ -1,6 +1,7 @@
 import reporter from "gatsby-cli/lib/reporter"
 import type { IStructuredError } from "gatsby-cli/src/structured-errors/types"
-import { IGatsbyPage, IGatsbyState } from "../redux/types"
+import { IGatsbyPage } from "../redux/types"
+import { ICollectedFragments } from "./babel/find-page-fragments"
 
 export interface IPageData {
   componentChunkName: IGatsbyPage["componentChunkName"]
@@ -9,7 +10,7 @@ export interface IPageData {
   staticQueryHashes: Array<string>
   getServerDataError?: IStructuredError | Array<IStructuredError> | null
   manifestId?: string
-  fragments?: IGatsbyPage["fragments"]
+  fragments: IGatsbyPage["fragments"]
 }
 
 export function constructPageDataString(
@@ -22,7 +23,7 @@ export function constructPageDataString(
     fragments: overrideFragments,
   }: IPageData,
   result: string | Buffer,
-  fragments?: IGatsbyState["fragments"]
+  fragmentsUsedByTemplate: ICollectedFragments
 ): string {
   let body =
     `{` +
@@ -31,46 +32,43 @@ export function constructPageDataString(
     `"result":${result},` +
     `"staticQueryHashes":${JSON.stringify(staticQueryHashes)}`
 
-  const formattedFragments = {}
+  let formattedFragments: null | Record<string, string> = null
 
-  // TODO: get this to work when there is no default fragment
-  // and all fragments are specialized (i.e. about author fragments won't have a default)
-  if (fragments) {
-    for (const fragment of fragments.values()) {
-      let concreteFragmentForFragmentSlot = fragment.name
+  if (fragmentsUsedByTemplate) {
+    for (const [fragmentSlot, fragmentConf] of Object.entries(
+      fragmentsUsedByTemplate
+    )) {
+      let concreteFragmentForFragmentSlot = fragmentSlot
 
-      if (overrideFragments && overrideFragments[fragment.name]) {
-        if (!fragments.has(overrideFragments[fragment.name])) {
-          // TODO throw the right kind of error
+      if (overrideFragments && overrideFragments[fragmentSlot]) {
+        concreteFragmentForFragmentSlot = overrideFragments[fragmentSlot]
+      }
+
+      // TODO: fix this check
+      const fragmentExists = true
+      if (!fragmentExists) {
+        if (fragmentConf.allowEmpty) {
+          continue
+        } else {
           const message =
-            `Could not find fragment "${overrideFragments[fragment.name]}". ` +
+            `Could not find fragment "${concreteFragmentForFragmentSlot}" used by page "${pagePath}". ` +
             `Please check your createPages in your gatsby-node to verify this ` +
-            `is the correct name.`
+            `is the correct name or set allowEmpty to true.`
 
           reporter.panicOnBuild(new Error(message))
         }
-
-        const overrideComponent = fragments.get(
-          overrideFragments[fragment.name]
-        )!
-
-        concreteFragmentForFragmentSlot = overrideComponent.name
-
-        // formattedFragment = {
-        //   result: {
-        //     layoutContext: overrideComponent.context,
-        //   },
-        //   componentChunkName: overrideComponent.componentChunkName,
-        //   id: overrideComponent.name,
-        //   name: fragment.name,
-        // }
       }
 
-      formattedFragments[fragment.name] = concreteFragmentForFragmentSlot
+      if (!formattedFragments) {
+        formattedFragments = {}
+      }
+      formattedFragments[fragmentSlot] = concreteFragmentForFragmentSlot
     }
   }
 
-  body += `,"fragmentsMap":${JSON.stringify(formattedFragments)}`
+  if (formattedFragments) {
+    body += `,"fragmentsMap":${JSON.stringify(formattedFragments)}`
+  }
 
   if (matchPath) {
     body += `,"matchPath":"${matchPath}"`

@@ -2,7 +2,7 @@ import path from "path"
 import { Store } from "redux"
 import { Compiler, Module, NormalModule, Compilation } from "webpack"
 import ConcatenatedModule from "webpack/lib/optimize/ConcatenatedModule"
-import { isEqual } from "lodash"
+import { isEqual, cloneDeep } from "lodash"
 import { generateComponentChunkName } from "../../js-chunk-names"
 import { enqueueFlush } from "../../page-data"
 import type {
@@ -10,6 +10,10 @@ import type {
   IGatsbyPageComponent,
   IGatsbyStaticQueryComponents,
 } from "../../../redux/types"
+import {
+  ICollectedFragment,
+  mergePreviouslyCollectedFragments,
+} from "../../babel/find-page-fragments"
 
 type ChunkGroup = Compilation["chunkGroups"][0]
 type EntryPoint = Compilation["asyncEntrypoints"][0]
@@ -52,14 +56,24 @@ function getRealPath(
 function getWebpackModulesByResourcePaths(
   modules: Set<Module>,
   staticQueries: IGatsbyState["staticQueryComponents"],
-  components: IGatsbyState["components"]
+  components: IGatsbyState["components"],
+  componentsUsingPageFragments: IGatsbyState["componentsUsingPageFragments"]
 ): {
   webpackModulesByStaticQueryId: Map<string, Module>
   webpackModulesByComponentId: Map<string, Module>
+  webpackModulesUsingFragments: Set<{
+    module: Module
+    fragments: Record<string, ICollectedFragment>
+  }>
+  // webpackModulesBy
 } {
   const realPathCache = new Map<string, string>()
   const webpackModulesByStaticQueryId = new Map<string, Module>()
   const webpackModulesByComponentId = new Map<string, Module>()
+  const webpackModulesUsingFragments = new Set<{
+    module: Module
+    fragments: Record<string, ICollectedFragment>
+  }>()
 
   modules.forEach(webpackModule => {
     for (const [id, staticQuery] of staticQueries) {
@@ -88,9 +102,25 @@ function getWebpackModulesByResourcePaths(
 
       webpackModulesByComponentId.set(id, webpackModule)
     }
+
+    for (const [filePath, fragments] of componentsUsingPageFragments) {
+      const componentComponentPath = getRealPath(realPathCache, filePath)
+      if (!doesModuleMatchResourcePath(componentComponentPath, webpackModule)) {
+        continue
+      }
+
+      webpackModulesUsingFragments.add({
+        module: webpackModule,
+        fragments: fragments,
+      })
+    }
   })
 
-  return { webpackModulesByStaticQueryId, webpackModulesByComponentId }
+  return {
+    webpackModulesByStaticQueryId,
+    webpackModulesByComponentId,
+    webpackModulesUsingFragments,
+  }
 }
 
 /**
@@ -129,7 +159,8 @@ export class StaticQueryMapper {
   }
 
   apply(compiler: Compiler): void {
-    const { components, staticQueryComponents } = this.store.getState()
+    const { components, staticQueryComponents, componentsUsingPageFragments } =
+      this.store.getState()
 
     compiler.hooks.done.tap(this.name, stats => {
       const compilation = stats.compilation
@@ -140,18 +171,26 @@ export class StaticQueryMapper {
       }
 
       const staticQueriesByChunkGroup = new Map<ChunkGroup, Array<string>>()
+      const pageFragmentUsageByChunkGroup = new Map<
+        ChunkGroup,
+        Record<string, ICollectedFragment>
+      >()
       const chunkGroupsWithPageComponents = new Set<ChunkGroup>()
       const chunkGroupsByComponentPath = new Map<
         IGatsbyPageComponent["componentPath"],
         ChunkGroup
       >()
 
-      const { webpackModulesByStaticQueryId, webpackModulesByComponentId } =
-        getWebpackModulesByResourcePaths(
-          compilation.modules,
-          staticQueryComponents,
-          components
-        )
+      const {
+        webpackModulesByStaticQueryId,
+        webpackModulesByComponentId,
+        webpackModulesUsingFragments,
+      } = getWebpackModulesByResourcePaths(
+        compilation.modules,
+        staticQueryComponents,
+        components,
+        componentsUsingPageFragments
+      )
 
       const appEntryPoint = (
         compilation.entrypoints.has(`app`)
@@ -197,6 +236,39 @@ export class StaticQueryMapper {
         })
       }
 
+      // group PageFragment usage by chunkGroup for ease of use
+      for (const {
+        fragments,
+        module: webpackModule,
+      } of webpackModulesUsingFragments) {
+        let chunkGroupsDerivedFromEntrypoints: Array<ChunkGroup> = []
+        for (const chunk of compilation.chunkGraph.getModuleChunksIterable(
+          webpackModule
+        )) {
+          for (const chunkGroup of chunk.groupsIterable) {
+            if (chunkGroup === appEntryPoint) {
+              chunkGroupsDerivedFromEntrypoints.push(chunkGroup)
+            } else {
+              chunkGroupsDerivedFromEntrypoints =
+                chunkGroupsDerivedFromEntrypoints.concat(
+                  getChunkGroupsDerivedFromEntrypoint(chunkGroup, appEntryPoint)
+                )
+            }
+          }
+        }
+
+        // loop over all component chunkGroups or global ones
+        chunkGroupsDerivedFromEntrypoints.forEach(chunkGroup => {
+          pageFragmentUsageByChunkGroup.set(
+            chunkGroup,
+            mergePreviouslyCollectedFragments(
+              fragments,
+              pageFragmentUsageByChunkGroup.get(chunkGroup)
+            )
+          )
+        })
+      }
+
       // group chunkGroups by componentPaths for ease of use
       for (const [
         componentPath,
@@ -223,33 +295,72 @@ export class StaticQueryMapper {
         }
       }
 
+      let globalFragmentUsage: Record<string, ICollectedFragment> = {}
+      for (const [chunkGroup, fragments] of pageFragmentUsageByChunkGroup) {
+        if (!chunkGroupsWithPageComponents.has(chunkGroup)) {
+          globalFragmentUsage = mergePreviouslyCollectedFragments(
+            fragments,
+            globalFragmentUsage
+          )
+        }
+      }
+
       components.forEach(component => {
         const allStaticQueries = new Set(globalStaticQueries)
+        let allFragments: Record<string, ICollectedFragment> =
+          cloneDeep(globalFragmentUsage)
+
         if (chunkGroupsByComponentPath.has(component.componentPath)) {
           const chunkGroup = chunkGroupsByComponentPath.get(
             component.componentPath
           )
-          if (chunkGroup && staticQueriesByChunkGroup.has(chunkGroup)) {
-            ;(
-              staticQueriesByChunkGroup.get(chunkGroup) as Array<string>
-            ).forEach(staticQuery => {
-              allStaticQueries.add(staticQuery)
-            })
+          if (chunkGroup) {
+            const staticQueriesForChunkGroup =
+              staticQueriesByChunkGroup.get(chunkGroup)
+
+            if (staticQueriesForChunkGroup) {
+              staticQueriesForChunkGroup.forEach(staticQuery => {
+                allStaticQueries.add(staticQuery)
+              })
+            }
+
+            const fragmentsForChunkGroup =
+              pageFragmentUsageByChunkGroup.get(chunkGroup)
+
+            if (fragmentsForChunkGroup) {
+              allFragments = mergePreviouslyCollectedFragments(
+                fragmentsForChunkGroup,
+                allFragments
+              )
+            }
           }
         }
 
         // modules, chunks, chunkgroups can all have not-deterministic orders so
         // just sort array of static queries we produced to ensure final result is deterministic
         const staticQueryHashes = Array.from(allStaticQueries).sort()
+        const fragments = Object.keys(allFragments)
+          .sort()
+          .reduce((obj, key) => {
+            obj[key] = allFragments[key]
+            return obj
+          }, {})
 
-        if (
-          !isEqual(
-            this.store
-              .getState()
-              .staticQueriesByTemplate.get(component.componentPath),
-            staticQueryHashes
-          )
-        ) {
+        const didStaticQueriesChange = !isEqual(
+          this.store
+            .getState()
+            .staticQueriesByTemplate.get(component.componentPath),
+          staticQueryHashes
+        )
+
+        const didFragmentsChange = !isEqual(
+          this.store
+            .getState()
+            .fragmentsByTemplate.get(component.componentPath),
+          fragments
+        )
+
+        if (didStaticQueriesChange || didFragmentsChange) {
           this.store.dispatch({
             type: `ADD_PENDING_TEMPLATE_DATA_WRITE`,
             payload: {
@@ -257,7 +368,19 @@ export class StaticQueryMapper {
               pages: component.pages,
             },
           })
+        }
 
+        if (didFragmentsChange) {
+          this.store.dispatch({
+            type: `SET_FRAGMENTS_BY_TEMPLATE`,
+            payload: {
+              componentPath: component.componentPath,
+              fragments,
+            },
+          })
+        }
+
+        if (didStaticQueriesChange) {
           this.store.dispatch({
             type: `SET_STATIC_QUERIES_BY_TEMPLATE`,
             payload: {

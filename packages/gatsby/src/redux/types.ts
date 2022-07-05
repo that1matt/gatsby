@@ -17,6 +17,7 @@ import {
   IRenderFragmentResult,
   IRenderFragmentsResults,
 } from "../utils/worker/child/render-html"
+import { ICollectedFragments } from "../utils/babel/find-page-fragments"
 
 type SystemPath = string
 type Identifier = string
@@ -369,6 +370,8 @@ export interface IGatsbyState {
     templateCompilationHashes: Record<string, string>
   }
   fragments: Map<string, IGatsbyPageFragment>
+  componentsUsingPageFragments: Map<string, ICollectedFragments>
+  fragmentsByTemplate: Map<SystemPath, ICollectedFragments>
 }
 
 export type GatsbyStateKeys = keyof IGatsbyState
@@ -386,6 +389,7 @@ export interface ICachedReduxState {
   pendingPageDataWrites: IGatsbyState["pendingPageDataWrites"]
   queries: IGatsbyState["queries"]
   html: IGatsbyState["html"]
+  fragmentsByTemplate: IGatsbyState["fragmentsByTemplate"]
 }
 
 export type ActionsUnion =
@@ -462,6 +466,8 @@ export type ActionsUnion =
   | ICreateFragmentAction
   | ISetFragmentsRenderResultsAction
   | ISetSSRTemplateWebpackCompilationHashAction
+  | ISetComponentsUsingPageFragmentsAction
+  | ISetFragmentsByTemplateAction
   | IProcessGatsbyImageSourceUrlAction
   | IClearGatsbyImageSourceUrlAction
 
@@ -754,6 +760,19 @@ export interface ISetFragmentsRenderResultsAction {
   type: `SET_FRAGMENTS_RENDER_RESULTS`
   payload: IRenderFragmentsResults
   plugin?: IGatsbyPlugin
+}
+
+export interface ISetComponentsUsingPageFragmentsAction {
+  type: `SET_COMPONENTS_USING_PAGE_FRAGMENTS`
+  payload: Map<string, ICollectedFragments>
+}
+
+export interface ISetFragmentsByTemplateAction {
+  type: `SET_FRAGMENTS_BY_TEMPLATE`
+  payload: {
+    componentPath: string
+    fragments: ICollectedFragments
+  }
 }
 
 export interface ICreateRedirectAction {
